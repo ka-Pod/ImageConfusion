@@ -1,0 +1,21 @@
+{
+  "name": "image-confusion",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "bun run --hot src/index.ts",
+    "start": "bun run src/index.ts",
+    "test": "bun test",
+    "lint": "bunx tsc --noEmit"
+  },
+  "dependencies": {
+    "archiver": "^8.0.0",
+    "hono": "^4.7.0",
+    "sharp": "^0.33.5"
+  },
+  "devDependencies": {
+    "@types/archiver": "^8.0.0",
+    "@types/bun": "latest",
+    "typescript": "^5.7.0"
+  }
+}
