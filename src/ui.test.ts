@@ -40,6 +40,8 @@ describe('renderPage', () => {
     expect(html).toContain('id="re"')
     expect(html).toContain('id="download"')
     expect(html).toContain('id="batch-dl"')
+    expect(html).toContain('btn-primary')
+    expect(html).toContain('btn-secondary')
   })
 
   test('includes reader layout containers', async () => {
@@ -81,5 +83,36 @@ describe('renderPage', () => {
     const { renderPage } = await import('./ui')
     const html = renderPage()
     expect(html).toContain('showToast')
+  })
+
+  test('has header layout classes', async () => {
+    const { renderPage } = await import('./ui')
+    const html = renderPage()
+    expect(html).toContain('class="header"')
+    expect(html).toContain('header-row')
+    expect(html).toContain('header-title')
+    expect(html).toContain('space-between')
+  })
+
+  test('has kinetic typography animations', async () => {
+    const { renderPage } = await import('./ui')
+    const html = renderPage()
+    expect(html).toContain('letterPulse')
+    expect(html).toContain('hueDrift')
+    expect(html).toContain('@keyframes scramble')
+  })
+
+  test('has neo-brutalist button styles', async () => {
+    const { renderPage } = await import('./ui')
+    const html = renderPage()
+    expect(html).toContain('4px 4px 0 0')
+    expect(html).toContain('border-radius: 0')
+  })
+
+  test('has preview title hide', async () => {
+    const { renderPage } = await import('./ui')
+    const html = renderPage()
+    expect(html).toContain('.previewing h1')
+    expect(html).toContain('previewing')
   })
 })
