@@ -1,6 +1,6 @@
 import { expect, test, describe, beforeAll } from 'bun:test'
 import sharp from 'sharp'
-import { app } from '../api/index'
+import { app } from './app'
 
 let testImageBuffer: ArrayBuffer
 

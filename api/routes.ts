@@ -83,7 +83,7 @@ api.post('/batch/encrypt', async (c) => {
     for (const item of items) {
       if (item.error) continue
       const buf = await getProcessedImage(sessionId, item.id)
-      if (buf) zipFiles.push({ name: item.processedName, buffer: buf })
+      if (buf) zipFiles.push({ name: item.processedName, buffer: buf }) 
     }
     const finalZip = await createZipFile(zipFiles)
     await saveZipFile(sessionId, finalZip)

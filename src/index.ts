@@ -1,4 +1,4 @@
-import { app } from '../api/index'
+import { app } from './app'
 import { log } from './logger'
 
 const port = parseInt(process.env.PORT || '3000', 10)

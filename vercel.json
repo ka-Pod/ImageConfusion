@@ -1,6 +1,6 @@
 {
   "bunVersion": "1.x",
   "rewrites": [
-    { "source": "/(.*)", "destination": "/api" }
+    { "source": "/", "destination": "/api" }
   ]
 }

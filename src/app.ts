@@ -1,9 +1,9 @@
-import { Hono } from 'hono'
+import { Hono, type Context } from 'hono'
 import { logger } from 'hono/logger'
-import { api } from './routes'
-import { renderPage } from '../src/ui'
-import { log } from '../src/logger'
-import { startCleanupTimer } from '../src/batch'
+import { api } from '../api/routes'
+import { renderPage } from './ui'
+import { log } from './logger'
+import { startCleanupTimer } from './batch'
 
 startCleanupTimer()
 
@@ -13,9 +13,9 @@ app.use(logger())
 
 app.route('/api', api)
 
-app.get('/', (c) => {
-  return c.html(renderPage())
-})
+const renderHome = (c: Context) => c.html(renderPage())
+app.get('/', renderHome)
+app.get('/api', renderHome)
 
 app.notFound((c) => c.json({ error: 'Not Found' }, 404))
 
@@ -25,5 +25,3 @@ app.onError((err, c) => {
 })
 
 export { app }
-
-export default app.fetch
