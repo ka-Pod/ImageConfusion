@@ -294,129 +294,92 @@ new IntersectionObserver((entries) => {
 - Encrypt: `POST /api/batch/download?zipId=xxx` → 返回 `encrypt_results.zip`
 - Decrypt: `POST /api/batch/download { sessionId, ids[] }` → 返回 `decrypt_results.zip`
 
-## CSS 样式规范
+## 设计系统（v2 — Brutalism + Motion-Driven）
 
-### 基础
+设计语言基于 **Dark Brutalism** 风格，结合 **Kinetic Motion** 动效体系。
 
-- 无外部 CSS 依赖
-- 使用 `-apple-system` 字体栈
-- 按钮统一使用 `.btn` 基类 + 独立颜色 class
+### 设计 Dial
+
+| Dial | 值 | 体现 |
+|---|---|---|
+| Variance | 9/10 — 大胆/非对称 | 锐角边框、实色色块、非 grid 对齐、offset 阴影 |
+| Motion | 9/10 — 复杂动效 | 入场 stagger、图片 crossfade + scale、滚动错开动画、机械按压 |
+| Density | 3/10 — 宽松间距 | 大字号、充足呼吸空间 |
+
+### 色彩系统（CSS 变量）
+
+| Token | Dark | Light | 用途 |
+|---|---|---|---|
+| `--bg` | `#09090B` | `#FAFAFA` | 页面背景 |
+| `--fg` | `#FAFAFA` | `#09090B` | 前景文字 |
+| `--accent` | `#EC4899` | `#EC4899` | 强调色（粉红） |
+| `--accent2` | `#DFE104` | `#DFE104` | 次要强调（酸黄） |
+| `--muted` | `#27272A` | `#E8ECF0` | 柔和背景 |
+| `--muted-fg` | `#A1A1AA` | `#64748B` | 柔和文字 |
+| `--border` | `#3F3F46` | `#D4D4D8` | 边框色 |
+| `--success` | `#2ECC71` | `#2ECC71` | 成功状态 |
+| `--error` | `#E74C3C` | `#E74C3C` | 错误状态 |
+| `--radius` | `0px` | `0px` | 全局圆角（0 = 粗野主义锐角） |
+
+### 字体
+
+- 全局：**Space Mono**（Google Fonts）
+- 风格：monospace / brutalist / 技术感
+- CSS Import: `@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap')`
+
+### 暗色/亮色模式
+
+- 默认暗色，保存偏好至 `localStorage`
+- 点击右上角 `✦` / `☀` 按钮切换
+- `<html data-theme="dark|light">` 控制全局变量
+- 支持 `prefers-reduced-motion` 禁用动画
+
+### 按钮
+
+- 无圆角（`border-radius: 0`），2px `border`
+- `:active` 时 `translateY(3px)` 机械按压效果（无 transition，instant response）
+- 标签使用大写字、`letter-spacing: 1px`
+- `btn-pulse` class 用于完成动画脉冲提示
 
 ### 预览滚动区
 
-```css
-#preview-scroll {
-  flex: 1;
-  overflow-y: auto;
-  scroll-snap-type: y mandatory;
-  border: 2px dashed #ddd;
-  border-radius: 8px;
-  min-height: 50vh;
-  max-height: 70vh;
-}
-#preview-scroll.drag-over {
-  border-color: #4f1787;
-  background: rgba(79, 23, 135, 0.04);
-}
-.preview-item {
-  flex: 0 0 100%;
-  scroll-snap-align: start;
-  min-height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.preview-item img {
-  max-width: min(92vw, 800px);
-  max-height: min(60vh, 500px);
-  border-radius: 6px;
-}
-```
+- 3px dashed 边框，drag-over 时变为 solid accent 色
+- `scroll-snap-type: y mandatory` 保持分页式浏览
+- 图片切换使用 CSS transition：`opacity 0.25s + scale(0.97→1)`
 
 ### 缩略图侧栏
 
-```css
-#thumb-sidebar {
-  width: 140px;
-  overflow-y: auto;
-  flex-direction: column;
-  gap: 4px;
-  padding: 6px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-  max-height: 70vh;
-}
-.thumb-item {
-  flex: 0 0 auto;
-  cursor: pointer;
-  border: 2px solid #e0e0e0;
-  border-radius: 4px;
-  padding: 2px;
-  text-align: center;
-}
-.thumb-item.active {
-  border-color: #4f1787;
-  background: rgba(79, 23, 135, 0.04);
-}
-.thumb-item img {
-  width: 100%;
-  height: 56px;
-  object-fit: cover;
-  border-radius: 2px;
-}
-.thumb-idx {
-  position: absolute;
-  top: 1px; left: 1px;
-  background: rgba(0,0,0,0.6);
-  color: #fff;
-  font-size: 0.55rem;
-  padding: 0 3px;
-  border-radius: 2px;
-  line-height: 1.3;
-}
-```
+- `IntersectionObserver` 驱动滚入动画（`opacity + translateX` 错开 40ms/item）
+- 状态边框色：pending `--border` / processing `--accent` / done `--success` / error `--error`
+- 索引标签使用 accent 色背景
 
 ### Toast
 
-```css
-#toast-container {
-  position: fixed;
-  top: 12px; right: 12px;
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  pointer-events: none;
-}
-.toast {
-  padding: 10px 16px;
-  border-radius: 6px;
-  color: #fff;
-  font-size: 0.85rem;
-  animation: toastIn 0.25s ease;
-  pointer-events: auto;
-  max-width: 360px;
-}
-.toast-out { animation: toastOut 0.25s ease forwards; }
-@keyframes toastIn {
-  from { opacity: 0; transform: translateX(80px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-@keyframes toastOut {
-  from { opacity: 1; transform: translateX(0); }
-  to { opacity: 0; transform: translateX(80px); }
-}
-```
+- 无圆角，`border-left` 4px 彩色线条标示类型
+- `box-shadow: 6px 6px 0` offset 投影（brutalist 风格）
+- 2 种主题独立配色
 
-### 进度条
+### 入场动画
 
-```css
-#progress-wrap.show { display: flex; }
-#progress-bar { width: 200px; height: 6px; background: #e0e0e0; border-radius: 3px; overflow: hidden; }
-#progress-bar .bar-fill { height: 100%; background: #4f1787; transition: width 0.2s; }
-#progress-label { font-size: 0.8rem; color: #888; }
-```
+| 元素 | 延迟 | 动画 |
+|---|---|---|
+| h1 | 0.1s | fadeUp (translateY 16px) |
+| .subtitle | 0.2s | fadeUp |
+| .desc | 0.3s | fadeUp |
+| .controls | 0.4s | fadeUp |
+| #main-area | 0.5s | fadeUp |
+| #status | 0.6s | fadeUp |
+
+## 动画系统
+
+| 触发时机 | 动画 | 实现 |
+|---|---|---|
+| 页面加载 | 元素逐个 fadeIn | CSS `@keyframes fadeUp` + `animation-delay` |
+| 按钮按下 | 机械按压 | `:active { transform: translateY(3px) }` 无 transition |
+| 图片切换 | crossfade + 微缩放 | `img-entering` class → `opacity 0` → RAF 移除 → transition 恢复 |
+| 缩略图滚入 | slide-in + opacity | `IntersectionObserver` 添加 `thumb-visible`，每项 40ms 错开 |
+| 操作完成 | 按钮脉冲 | `btn-pulse` class：`border-color` 在 success/accent 间循环 1.2s |
+| 拖拽进入 | 边框切换 | `border-style` 从 dashed → solid，颜色变 accent（无 transition） |
 
 ## 响应式布局
 
@@ -425,8 +388,9 @@ new IntersectionObserver((entries) => {
 | >=768px | `flex-direction: row` | `width: 140px` 纵向排列 | `flex: 0 0 auto` | `max-h: min(60vh, 500px)` |
 | <768px | `flex-direction: column` | `width: 100%` 横向滚动，max-h: 80px | `flex: 0 0 64px` | `max-height: 40vh` |
 
-- `<768px` 时按钮缩小至 `height: 1.8rem; font-size: 0.75rem`
+- `<768px` 时按钮缩小至 `height: 1.9rem; font-size: 0.6rem`
 - 预览区 `min-height: 40vh; max-height: 55vh`
+- 主题切换按钮在移动端缩小至 36px
 
 ## 浏览器兼容性
 
@@ -435,3 +399,4 @@ new IntersectionObserver((entries) => {
 - `scroll-snap` (Chrome 69+, Firefox 68+, Edge 79+)
 - `<a download>` 要求 `<a>` 在 DOM 树中（Firefox 限制）
 - `webkitdirectory` 仅 Chrome / Edge 支持
+- `@import url(...)` 加载 Google Fonts（Space Mono）
