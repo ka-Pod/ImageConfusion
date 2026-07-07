@@ -37,7 +37,7 @@
 ┌──────────────────────────────────────────────────────────────┐
 │                           标题 + 按钮行                        │
 │                    progress-wrap + spinner                    │
-├──────────┬───────────────────────────────────────────────────┤
+  ├──────────┬───────────────────────────────────────────────────┤
 │          │                                                   │
 │ #thumb-sidebar │           #preview-scroll                     │
 │  (140px)  │     (flex:1, scroll-snap-type: y mandatory)     │
@@ -45,14 +45,17 @@
 │ ┌──────┐ │  ┌─────────────────────────────────────────────┐  │
 │ │1/10  │ │  │  .preview-item (flex:0 0 100%; min-h:100%) │  │
 │ │ [img]│ │  │  ┌──────────────────────────────────────┐  │  │
-│ ├──────┤ │  │  │              img                     │  │  │
-│ │2/10  │ │  │  └──────────────────────────────────────┘  │  │
-│ │ [img]│ │  └─────────────────────────────────────────────┘  │
-│ ├──────┤ │  ┌─────────────────────────────────────────────┐  │
-│ │3/10  │ │  │  .preview-item (next page, snap scroll)     │  │
-│ │ [img]│ │  │  ┌──────────────────────────────────────┐  │  │
-│ │ ...  │ │  │  │              img                     │  │  │
-│ └──────┘ │  │  └──────────────────────────────────────┘  │  │
+│ │░░░░░░│ │  │  │              img           ┌─────┐  │  │
+│ ├──────┤ │  │  │                              │3/10 │  │  │
+│ │2/10  │ │  │  │                              └─────┘  │  │
+│ │ [img]│ │  │  └──────────────────────────────────────┘  │  │
+│ │░░░░░░│ │  │  (mobile: ◀  overlay arrows on sides)      │  │
+│ ├──────┤ │  └─────────────────────────────────────────────┘  │
+│ │3/10  │ │  ┌─────────────────────────────────────────────┐  │
+│ │░░░░░░│ │  │  .preview-item (next page, snap scroll)     │  │
+│ │ ...  │ │  │  ┌──────────────────────────────────────┐  │  │
+│ └──────┘ │  │  │              img                     │  │  │
+│          │  │  └──────────────────────────────────────┘  │  │
 │          │  └─────────────────────────────────────────────┘  │
 │          │                                                   │
 ├──────────┴───────────────────────────────────────────────────┤
@@ -79,6 +82,8 @@
 | 状态文字 | `status` | 底部状态显示 |
 | 状态字幕 | `status-marquee` | 底部 Kinetic Typography 字幕行 |
 | Toast 容器 | `toast-container` | fixed 右上角，z-index: 9999 |
+| 预览计数器（批量） | `preview-counter` | 右下角叠加 `3 / 10`，仅批量模式 |
+| 导航箭头容器（批量） | `preview-nav` | 手机端左右叠加 ◀ ▶，仅批量模式 |
 
 ## 按钮布局
 
@@ -137,10 +142,12 @@
 
 ```
 上传ZIP → 前端 POST /api/batch/decrypt-zip → { sessionId, items[] }
-  → batchItems 初始状态无 processedBlob（只显示 idx 标签）
+  → batchItems 初始状态 status = 'processing'
+  → renderReaderView() → 缩略图显示 shimmer 占位动画 + 预览区 shimmer
   → 逐个 GET /api/batch/image/:id → processedBlob
-    每次获取后调用 renderReaderView() 刷新缩略图+预览
-  → 所有图片显示 "已还原" 缩略图（绿色边框）
+    每次加载完成后 → 替换为真实图片，shimmer 消失
+    更新 status = 'decrypted'，调用 renderReaderView()
+  → 所有图片显示真实缩略图
   → 打包下载启用
   →
   └── 点击打包下载 → POST /api/batch/download { sessionId, ids }
@@ -200,6 +207,14 @@ type BatchItem = {
 - 处理中（spinner）：混淆、解混淆 disabled
 - 图片加载后：全部启用
 - 批量模式：打包下载在完成前 disabled
+
+### 批量模式增强交互
+
+- **图片计数器**：右下角 `3/10` badge，始终显示
+- **触摸滑动**：水平滑动切换图片（移动端，threshold 50px）
+- **导航箭头**：手机端左右 ◀ ▶（仅在 `<768px` 显示）
+- **桌面导航**：缩略图点击 + 键盘 `↑↓←→ Home End`
+- **加载占位**：解密流程中未加载图片显示 shimmer 骨架屏
 
 ## 拖拽上传（Drag & Drop）
 
@@ -270,18 +285,87 @@ new IntersectionObserver((entries) => {
 - `threshold: 0.5` → 元素过半可见时触发
 - 同步更新 `#thumb-sidebar` 中对应 `.thumb-item.active`
 
+## 图片加载优化 — Shimmer 骨架屏
+
+ZIP 解密流程中，图片逐个从服务端加载。未完成时显示 CSS shimmer 占位：
+
+```css
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer-placeholder {
+  background: linear-gradient(90deg, var(--muted) 25%, #f0f0f0 50%, var(--muted) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+```
+
+触发时机：`status === 'processing'` 且无 `processedBlob`。
+替换时机：图片加载完成后，真实 img 替换 shimmer 占位。
+
+## 图片计数器
+
+批量模式下，预览区右下角叠加 `3 / 10` badge：
+
+```
+┌──────────────────────────────────┐
+│                                  │
+│              图片内容             │
+│                          ┌─────┐ │
+│                          │3/10 │ │
+│                          └─────┘ │
+└──────────────────────────────────┘
+```
+
+- 背景 `var(--accent)`, 白色文字, `font-size: 0.75rem`, `font-weight: 700`
+- 同步 `selectedIndex`，图片切换时自动更新
+- 所有设备始终显示
+
+## 触摸滑动手势
+
+批量模式下监听 `.preview-item` 区域的触摸事件：
+
+```
+touchstart → 记录 startX
+touchmove  → 计算 deltaX
+touchend   → deltaX > 50px → scrollToImage(selectedIndex - 1)
+             deltaX < -50px → scrollToImage(selectedIndex + 1)
+```
+
+- 阈值 50px 避免误触
+- 不影响垂直 scroll-snap 的正常滑动
+- 不影响桌面端
+
+## 手机端导航箭头
+
+仅在 `<768px` 显示，左右两侧叠加半透明 `◀` `▶` 按钮：
+
+```
+@media (max-width: 767px) {
+  .preview-nav { display: flex; }
+}
+@media (min-width: 768px) {
+  .preview-nav { display: none; }
+}
+```
+
+- 点击触发 `scrollToImage(selectedIndex ± 1)`
+- 半透明背景，`z-index` 高于图片
+- 桌面端依赖缩略图侧栏 + 键盘快捷键
+
 ## 缩略图行为
 
 | 状态 | 缩略图 | 边框色 | overlay |
-|---|---|---|---|
-| `pending` | 显示原图（若有 file） | `#e0e0e0` | 无 |
-| `processing` | 显示原图 | `#4f1787` | "处理中" |
-| `encrypted` | 原图 + 半透明遮罩 | `#2ecc71` | "已混淆" |
-| `decrypted` | 显示 processedBlob | `#2ecc71` | 无 |
-| `error` | 显示原图 | `#e74c3c` | 错误信息 |
+|---|---|---|---|---|
+| `pending` | 显示原图（若有 file） | `var(--border)` | 无 |
+| `processing` | shimmer 占位（无图时） | `var(--border)` | — |
+| `encrypted` | 原图 + 半透明遮罩 | `var(--success)` / `#2ecc71` | "已混淆" uppercase |
+| `decrypted` | 显示 processedBlob | `var(--success)` / `#2ecc71` | 无 |
+| `error` | 显示原图 | `var(--error)` / `#e74c3c` | 错误信息 |
 
-- 每个缩略图左上角有 idx 标签，格式 `"3/10"`
-- ZIP 上传初始阶段无 `processedBlob` 也无 `file.size`，缩略图只显示 idx 标签
+- 每个缩略图左上角有 idx 标签，格式 `"3/10"`，背景 `var(--accent)`
+- ZIP 上传初始阶段无 `processedBlob` → 缩略图显示 shimmer 占位动画
 - 点击缩略图调用 `scrollToImage(index)` 跳转到对应预览页
 
 ## 下载功能
