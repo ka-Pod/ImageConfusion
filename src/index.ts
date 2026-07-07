@@ -224,7 +224,8 @@ app.onError((err, c) => {
 
 const port = parseInt(process.env.PORT || '3000', 10)
 
-if (!process.env.VERCEL) {
+const isEntryPoint = import.meta.path === Bun.main
+if (!process.env.VERCEL && isEntryPoint) {
   Bun.serve({ port, fetch: app.fetch })
   log('INFO', `Server starting on http://localhost:${port}`)
 }
