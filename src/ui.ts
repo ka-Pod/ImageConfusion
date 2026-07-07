@@ -468,6 +468,10 @@ ipt.onchange = function () {
     selectedIndex = -1
     thumbSidebar.style.display = 'none'
     batchDlBtn.disabled = true
+    encBtn.disabled = false
+    decBtn.disabled = false
+    reBtn.disabled = false
+    downloadBtn.disabled = false
     var header = document.querySelector('.header')
     if (header) header.classList.add('previewing')
     var url = URL.createObjectURL(ipt.files[0])

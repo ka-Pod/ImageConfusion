@@ -16,12 +16,14 @@
 
 | 模块 | 路径 | 职责 |
 |---|---|---|
-| 服务入口 | `src/index.ts` | Hono HTTP 路由，请求处理 |
+| 服务入口 | `src/index.ts` | Bun 服务启动，导出 app.fetch |
+| 应用根 | `src/app.ts` | Hono 应用配置，路由挂载，`renderPage()` |
+| 路由处理 | `src/routes.ts` | API 端点实现（encrypt/decrypt/batch） |
 | Gilbert 曲线 | `src/gilbert.ts` | 任意尺寸矩形空间填充曲线生成 |
 | 混淆引擎 | `src/confuse.ts` | 像素级混淆/解混淆（Uint8Array 操作） |
-| 前端渲染 | `src/ui.ts` | `renderPage()` 生成完整 HTML/CSS/JS（阅读器布局、拖拽、Toast、进度条、键盘导航、Kinetic Typography） |
-| 服务入口 | `src/index.ts` | Hono HTTP 路由，请求处理，调用 `renderPage()` |
-| 批处理引擎 | `src/batch.ts` | 临时存储管理、ZIP 打包（archiver）、ZIP 解压（tar）、TTL 清理 |
+| 前端渲染 | `src/ui.ts` | `renderPage()` 生成完整 HTML/CSS/JS |
+| 批处理引擎 | `src/batch.ts` | 临时存储管理、ZIP 打包（archiver）、ZIP 解压（unzipper）、TTL 清理 |
+| 日志模块 | `src/logger.ts` | 日志写入（logs/ 目录，fallback /tmp） |
 
 ## 混淆算法
 
@@ -38,8 +40,6 @@
 ---
 
 ## 批量处理架构
-
-### 双流程设计
 
 ### 双流程设计
 

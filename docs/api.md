@@ -97,7 +97,7 @@
 
 **请求（decrypt 模式）：** `application/json`
 ```json
-{ "ids": ["img-uuid-1", "img-uuid-2"] }
+{ "sessionId": "session-uuid", "ids": ["img-uuid-1", "img-uuid-2"] }
 ```
 
 **请求（encrypt 模式）：** `POST /api/batch/download?zipId=uuid-string`
@@ -132,7 +132,7 @@
 }
 ```
 
-**内部流程：** 接收 ZIP → 解压到 temp → 过滤非图片文件 → 逐张 decrypt → 存入 session temp → 清理解压目录 → 返回 items
+**内部流程：** 接收 ZIP buffer → unzipper 流式解压 → 过滤非图片文件 → 逐张 decrypt → 存入 session temp → 返回 items
 
 ---
 

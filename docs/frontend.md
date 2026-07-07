@@ -214,10 +214,33 @@ type BatchItem = {
 
 ### 按钮禁用状态
 
-- 图片未加载时：混淆、解混淆、还原、下载均 disabled
-- 处理中（spinner）：混淆、解混淆 disabled
-- 图片加载后：全部启用
-- 批量模式：打包下载在完成前 disabled
+| 状态 | enc | dec | re | download | batch-dl |
+|------|-----|-----|----|----|------|
+| 初始（无图片） | ✅ disabled | ✅ disabled | ✅ disabled | ✅ disabled | ✅ disabled |
+| 单图已加载 | ❌ enabled | ❌ enabled | ❌ enabled | ❌ enabled | ✅ disabled |
+| 单图处理中 | ✅ disabled | ✅ disabled | - | - | ✅ disabled |
+| 批量已加载 | ❌ enabled | ❌ enabled | - | - | ✅ disabled |
+| 批量处理中 | ✅ disabled | ✅ disabled | - | - | ✅ disabled |
+| 批量混淆完成 | - | - | - | - | ❌ enabled |
+| 批量解密完成 | - | - | - | - | ❌ enabled |
+| 批量→单图切换 | ❌ enabled | ❌ enabled | ❌ enabled | ❌ enabled | ✅ disabled |
+
+### 模式切换状态清理
+
+**批量→单图**（选择单张图片）：
+1. 调用 cleanup API（清理旧 sessionId）
+2. 释放 batchItems 中的 processedBlob
+3. 重置：batchMode=false, batchItems=[], sessionId=null, zipId=null
+4. 启用：encBtn, decBtn, reBtn, downloadBtn
+5. 禁用：batchDlBtn
+
+**单图→批量**（选择多张图片）：
+1. 调用 cleanup API（清理旧 sessionId）
+2. 释放 batchItems 中的 processedBlob
+3. 释放 originalSrc
+4. 重置：batchMode=true, batchItems=[], sessionId=null, zipId=null
+5. 启用：encBtn, decBtn
+6. 禁用：batchDlBtn
 
 ### 批量模式增强交互
 
