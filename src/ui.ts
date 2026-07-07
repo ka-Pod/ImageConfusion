@@ -156,6 +156,60 @@ const progressWrap = document.getElementById('progress-wrap')
 const barFill = document.getElementById('bar-fill')
 const progressLabel = document.getElementById('progress-label')
 
+/* === Kinetic Typography === */
+var scrambleTimer = null
+var SCRAMBLE_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+
+function scrambleText(el, target, duration) {
+  duration = duration || 600
+  var frame = 0
+  var frames = Math.floor(duration / 50)
+  if (scrambleTimer) { clearInterval(scrambleTimer); el.textContent = target; return }
+  scrambleTimer = setInterval(function () {
+    frame++
+    if (frame >= frames) {
+      clearInterval(scrambleTimer)
+      scrambleTimer = null
+      el.textContent = target
+      return
+    }
+    var result = ''
+    for (var ci = 0; ci < target.length; ci++) {
+      if (target[ci] === ' ') { result += ' '; continue }
+      result += SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)]
+    }
+    el.textContent = result
+  }, 50)
+}
+
+var titleEl = document.querySelector('h1')
+if (titleEl) {
+  var titleTarget = titleEl.textContent
+  var titleScrambleInterval = setInterval(function () { scrambleText(titleEl, titleTarget, 600) }, 8000)
+  titleEl.addEventListener('mouseenter', function () {
+    clearInterval(titleScrambleInterval)
+    if (scrambleTimer) { clearInterval(scrambleTimer); scrambleTimer = null }
+    titleEl.textContent = titleTarget
+  })
+  titleEl.addEventListener('mouseleave', function () {
+    titleScrambleInterval = setInterval(function () { scrambleText(titleEl, titleTarget, 600) }, 8000)
+  })
+}
+
+var statusEl = document.getElementById('status')
+var _origStatusText = ''
+if (statusEl) {
+  _origStatusText = statusEl.textContent
+  var statusObserver = new MutationObserver(function () {
+    if (statusEl.textContent !== _origStatusText) {
+      var newText = statusEl.textContent
+      scrambleText(statusEl, newText, 400)
+      _origStatusText = newText
+    }
+  })
+  statusObserver.observe(statusEl, { childList: true, characterData: true, subtree: true })
+}
+
 /* === Toast === */
 function showToast(msg, type) {
   type = type || 'info'
@@ -208,6 +262,8 @@ function observeItems() {
 /* === Rendering === */
 function setSrc(url) {
   previewScroll.innerHTML = ''
+  var header = document.querySelector('.header')
+  if (header) header.classList.add('previewing')
   var item = document.createElement('div')
   item.className = 'preview-item'
   var img = document.createElement('img')
@@ -223,6 +279,8 @@ function renderReaderView() {
   if (batchItems.length === 0) {
     previewScroll.innerHTML = '<div class="drop-placeholder"><div class="drop-icon">+</div>拖拽图片或 ZIP 到此处</div>'
     thumbSidebar.style.display = 'none'
+    var header = document.querySelector('.header')
+    if (header) header.classList.remove('previewing')
     return
   }
 
@@ -306,6 +364,9 @@ function renderReaderView() {
     thumbSidebar.appendChild(thumbItem)
   })
 
+  var header = document.querySelector('.header')
+  if (header && !header.classList.contains('previewing')) header.classList.add('previewing')
+
   thumbSidebar.style.display = 'flex'
 
   var prevBtn = document.createElement('button')
@@ -352,13 +413,20 @@ var marqueeMessages = ['GILBERT 2D CURVE · SPACE-FILLING · OFFSET 0.618', 'PIX
 var marqueeIndex = 0
 var marqueeEl = document.getElementById('status-marquee')
 if (marqueeEl) {
+  marqueeEl.style.position = 'relative'
   marqueeEl.textContent = marqueeMessages[0]
   setInterval(function () {
     marqueeIndex = (marqueeIndex + 1) % marqueeMessages.length
+    marqueeEl.style.transform = 'translateY(-100%)'
     marqueeEl.style.opacity = '0'
     setTimeout(function () {
       marqueeEl.textContent = marqueeMessages[marqueeIndex]
-      marqueeEl.style.opacity = '1'
+      marqueeEl.style.transform = 'translateY(100%)'
+      marqueeEl.style.opacity = '0'
+      requestAnimationFrame(function () {
+        marqueeEl.style.transform = 'translateY(0)'
+        marqueeEl.style.opacity = '1'
+      })
     }, 300)
   }, 5000)
 }
@@ -370,6 +438,8 @@ ipt.onchange = function () {
     batchMode = false
     thumbSidebar.style.display = 'none'
     batchDlBtn.disabled = true
+    var header = document.querySelector('.header')
+    if (header) header.classList.add('previewing')
     var url = URL.createObjectURL(ipt.files[0])
     setSrc(url)
     originalSrc = url
@@ -562,6 +632,8 @@ reBtn.onclick = function () {
   if (batchMode) {
     if (batchItems.length > 0) scrollToImage(0)
   } else if (originalSrc) {
+    var header = document.querySelector('.header')
+    if (header) header.classList.add('previewing')
     setSrc(originalSrc)
     currentAction = ''
     status.textContent = '已还原原始图片'
