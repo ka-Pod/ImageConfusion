@@ -93,19 +93,25 @@ h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; margin: 0; tran
 
 function html(): string {
   return `
-<h1>图片混淆</h1>
-<p class="desc">基于空间填充曲线的图片混淆。混淆图被压缩仍能保持色彩。仅供技术交流使用。输出 JPEG 质量 0.95。</p>
-<div class="controls">
-  <span class="btn">选择图片<input type="file" multiple accept="image/*" id="ipt" /></span>
-  <span class="btn">选择文件夹<input type="file" accept="image/*" id="dir" webkitdirectory multiple /></span>
-  <span class="btn">上传ZIP<input type="file" accept=".zip" id="zip-upload" /></span>
-  <span class="btn-sep">│</span>
-  <button class="btn btn-encrypt" id="enc" disabled>混淆</button>
-  <button class="btn btn-decrypt" id="dec" disabled>解混淆</button>
-  <span class="btn-sep">│</span>
-  <button class="btn" id="re" disabled>还原</button>
-  <button class="btn" id="download" disabled>下载</button>
-  <button class="btn" id="batch-dl" disabled>打包下载</button>
+<div class="header">
+  <div class="header-row">
+    <div class="header-title">
+      <h1>图片混淆</h1>
+    </div>
+    <div class="controls">
+      <span class="btn btn-file">选择图片<input type="file" multiple accept="image/*" id="ipt" /></span>
+      <span class="btn btn-file">选择文件夹<input type="file" accept="image/*" id="dir" webkitdirectory multiple /></span>
+      <span class="btn btn-file">上传ZIP<input type="file" accept=".zip" id="zip-upload" /></span>
+      <span class="btn-sep">│</span>
+      <button class="btn btn-primary" id="enc" disabled>混淆</button>
+      <button class="btn btn-primary" id="dec" disabled>解混淆</button>
+      <span class="btn-sep">│</span>
+      <button class="btn btn-secondary" id="re" disabled>还原</button>
+      <button class="btn btn-secondary" id="download" disabled>下载</button>
+      <button class="btn btn-secondary" id="batch-dl" disabled>打包下载</button>
+    </div>
+  </div>
+  <p class="desc">基于空间填充曲线的图片混淆。混淆图被压缩仍能保持色彩。仅供技术交流使用。输出 JPEG 质量 0.95。</p>
 </div>
 <div id="progress-wrap">
   <div id="progress-bar"><div class="bar-fill" id="bar-fill"></div></div>
