@@ -2,71 +2,82 @@
 
 ## 架构
 
-前端为**纯静态单页应用**，由 Hono 服务端在 `GET /` 时内联返回完整 HTML。无前端框架依赖，所有 JavaScript 逻辑注入于 `<script>` 中。
+前端为**纯静态单页应用**，由 Hono 服务端在 `GET /` 时内联返回完整 HTML。无前端框架依赖，所有 CSS/JS 逻辑由 `src/ui.ts` 中的三个模板函数生成。
 
 ## 页面结构
 
 ### 单图模式
 
 ```
-┌──────────────────────────────────────────────────┐
-│                   图片混淆（标题）                  │
-│         基于空间填充曲线的图片混淆...（描述文字）      │
-│                                                   │
-│  [选择图片] [选择文件夹] [上传ZIP] │ [混淆] [解混淆] │ [还原] [下载] [打包下载] │
-│                   ↕ progress-wrap                  │
-│                   ↕ spinner                        │
-│  ┌──────────────────────────────────────────────┐  │
-│  │             #preview-scroll                   │  │
-│  │           (flex:1, overflow-y:auto)           │  │
-│  │         ┌──────────────────┐                  │  │
-│  │         │    .preview-item  │                  │  │
-│  │         │    ┌──────────┐  │                  │  │
-│  │         │    │   img    │  │                  │  │
-│  │         │    └──────────┘  │                  │  │
-│  │         └──────────────────┘                  │  │
-│  └──────────────────────────────────────────────┘  │
-│                  状态文字                           │
-│              #toast-container (fixed top-right)     │
-└──────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│ ┌──────────────────────────────────────────────────────┐ │
+│ │  │ 图片混淆                    [选择][文件夹][ZIP]  │ │ │
+│ │   └── 左侧粗竖线 accent ──      │ [混淆] [解混淆]  │ │ │
+│ │                               │ [还原][下载][打包] │ │ │
+│ │  基于空间填充曲线的图片混淆...（副标题）              │ │
+│ └──────────────────────────────────────────────────────┘ │
+│                   ↕ progress-wrap                        │
+│                   ↕ spinner                              │
+│  ┌──────────────────────────────────────────────────┐    │
+│  │                  #preview-scroll                   │    │
+│  │              (flex:1, overflow-y:auto)             │    │
+│  │         ┌────────────────────────┐                │    │
+│  │         │    .preview-item        │                │    │
+│  │         │    ┌────────────────┐  │                │    │
+│  │         │    │      img       │  │                │    │
+│  │         │    └────────────────┘  │                │    │
+│  │         └────────────────────────┘                │    │
+│  └──────────────────────────────────────────────────┘    │
+│                  状态文字                                 │
+│              #status-marquee (kinetic subtitle)           │
+│              #toast-container (fixed bottom-right)        │
+└──────────────────────────────────────────────────────────┘
 ```
 
 ### 批量模式（阅读布局）
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│                           标题 + 按钮行                        │
+│  │ 图片混淆                     [选择][文件夹][ZIP] │         │
+│                                  [混淆] [解混淆] │ ...       │
+│  基于空间填充曲线的图片混淆...                                │
 │                    progress-wrap + spinner                    │
-  ├──────────┬───────────────────────────────────────────────────┤
-│          │                                                   │
+├──────────┬─────────────────────────────────────────────────────┤
+│          │                                                     │
 │ #thumb-sidebar │           #preview-scroll                     │
-│  (140px)  │     (flex:1, scroll-snap-type: y mandatory)     │
-│          │                                                   │
-│ ┌──────┐ │  ┌─────────────────────────────────────────────┐  │
-│ │1/10  │ │  │  .preview-item (flex:0 0 100%; min-h:100%) │  │
-│ │ [img]│ │  │  ┌──────────────────────────────────────┐  │  │
-│ │░░░░░░│ │  │  │              img           ┌─────┐  │  │
+│  (140px)  │     (flex:1, scroll-snap-type: y mandatory)       │
+│          │                                                     │
+│ ┌──────┐ │  ┌───────────────────────────────────────────────┐  │
+│ │1/10  │ │  │  .preview-item (flex:0 0 100%; min-h:100%)   │  │
+│ │ [img]│ │  │  ┌────────────────────────────────────────┐  │  │
+│ │░░░░░░│ │  │  │              img             ┌─────┐  │  │
 │ ├──────┤ │  │  │                              │3/10 │  │  │
 │ │2/10  │ │  │  │                              └─────┘  │  │
-│ │ [img]│ │  │  └──────────────────────────────────────┘  │  │
-│ │░░░░░░│ │  │  (mobile: ◀  overlay arrows on sides)      │  │
-│ ├──────┤ │  └─────────────────────────────────────────────┘  │
-│ │3/10  │ │  ┌─────────────────────────────────────────────┐  │
-│ │░░░░░░│ │  │  .preview-item (next page, snap scroll)     │  │
-│ │ ...  │ │  │  ┌──────────────────────────────────────┐  │  │
-│ └──────┘ │  │  │              img                     │  │  │
-│          │  │  └──────────────────────────────────────┘  │  │
-│          │  └─────────────────────────────────────────────┘  │
-│          │                                                   │
-├──────────┴───────────────────────────────────────────────────┤
-│                         状态文字                              │
-└──────────────────────────────────────────────────────────────┘
+│ │ [img]│ │  │  └────────────────────────────────────────┘  │  │
+│ │░░░░░░│ │  │  (mobile: ◀  overlay arrows on sides)        │  │
+│ ├──────┤ │  └───────────────────────────────────────────────┘  │
+│ │3/10  │ │  ┌───────────────────────────────────────────────┐  │
+│ │░░░░░░│ │  │  .preview-item (next page, snap scroll)       │  │
+│ │ ...  │ │  │  ┌────────────────────────────────────────┐  │  │
+│ └──────┘ │  │  │              img                       │  │  │
+│          │  │  └────────────────────────────────────────┘  │  │
+│          │  └───────────────────────────────────────────────┘  │
+│          │                                                     │
+├──────────┴─────────────────────────────────────────────────────┤
+│                         状态文字                                │
+│                     #status-marquee                             │
+└────────────────────────────────────────────────────────────────┘
 ```
 
 ## DOM 元素清单
 
-| 元素 | ID | 说明 |
+| 元素 | ID / 类 | 说明 |
 |---|---|---|
+| Header 容器 | `.header` | 包裹标题 + 按钮行 + 副标题 |
+| 标题行 | `.header-row` | flex `space-between`，标题与按钮同排 |
+| 标题区 | `.header-title` | 左侧 4px accent 竖线 |
+| 标题文字 | `h1` | 图片混淆，Kinetic Scramble |
+| 副标题 | `.desc` | 功能描述 |
 | 文件输入（单/多图） | `ipt` | `accept="image/*" multiple`，支持单选和多选 |
 | 文件输入（文件夹） | `dir` | `webkitdirectory multiple` |
 | 文件输入（ZIP） | `zip-upload` | `accept=".zip"` |
@@ -81,7 +92,7 @@
 | Spinner | `spinner` | CSS 旋转动画 |
 | 状态文字 | `status` | 底部状态显示 |
 | 状态字幕 | `status-marquee` | 底部 Kinetic Typography 字幕行 |
-| Toast 容器 | `toast-container` | fixed 右上角，z-index: 9999 |
+| Toast 容器 | `toast-container` | fixed 右下角，z-index: 9999 |
 | 预览计数器（批量） | `preview-counter` | 右下角叠加 `3 / 10`，仅批量模式 |
 | 导航箭头容器（批量） | `preview-nav` | 手机端左右叠加 ◀ ▶，仅批量模式 |
 
@@ -94,27 +105,27 @@
    ├── 输入组 ──┤     │   ├── 核心操作 ─┤     │   ├── 输出/管理 ──────┤
 ```
 
-| 按钮 | ID | 样式 | 默认状态 | 功能 |
+| 按钮 | ID | 样式类 | 默认状态 | 功能 |
 |---|---|---|---|---|
-| 选择图片 | `ipt` | 描边 | 始终可用 | 打开文件选择器（单张或批量） |
-| 选择文件夹 | `dir` | 描边 | 始终可用 | `webkitdirectory` 批量选择 |
-| 上传 ZIP | `zip-upload` | 描边 | 始终可用 | 上传加密 ZIP 批量解密 |
-| 混淆 | `enc` | 描边 + accent | disabled | 单图/批量 encrypt |
-| 解混淆 | `dec` | 描边 + accent | disabled | 单图/批量 decrypt |
-| 还原 | `re` | 描边 | disabled | 单图恢复原始 / 批量跳转首页 |
-| 下载 | `download` | 描边 | disabled | 下载当前显示图片 |
-| 打包下载 | `batch-dl` | 描边 | disabled | 下载 encrypt/decrypt ZIP |
+| 选择图片 | `ipt` | `btn btn-file` | 始终可用 | 打开文件选择器（单张或批量） |
+| 选择文件夹 | `dir` | `btn btn-file` | 始终可用 | `webkitdirectory` 批量选择 |
+| 上传 ZIP | `zip-upload` | `btn btn-file` | 始终可用 | 上传加密 ZIP 批量解密 |
+| 混淆 | `enc` | `btn btn-primary` | disabled | 单图/批量 encrypt |
+| 解混淆 | `dec` | `btn btn-primary` | disabled | 单图/批量 decrypt |
+| 还原 | `re` | `btn btn-secondary` | disabled | 单图恢复原始 / 批量跳转首页 |
+| 下载 | `download` | `btn btn-secondary` | disabled | 下载当前显示图片 |
+| 打包下载 | `batch-dl` | `btn btn-secondary` | disabled | 下载 encrypt/decrypt ZIP |
 
 ## 单图模式交互流程
 
 ```
-选择单张图片 → #preview-scroll 显示 .preview-item → 按钮启用
+选择单张图片 → #preview-scroll 显示 .preview-item → 按钮启用 → header 添加 .previewing（标题淡出）
    │
    ├── 点击混淆 ──→ spinner → POST /api/encrypt → setSrc(blob) → showToast("混淆完成")
    │
    ├── 点击解混淆 ─→ spinner → POST /api/decrypt → setSrc(blob) → showToast("解混淆完成")
    │
-   ├── 点击还原 ───→ setSrc(originalSrc)
+   ├── 点击还原 ───→ setSrc(originalSrc) → header 添加 .previewing
    │
    └── 点击下载 ───→ <a download> 触发浏览器下载
 ```
@@ -126,7 +137,7 @@
 ```
 选择多张/文件夹 → loadBatchFiles(files)
   → batchItems = [...], batchMode = true
-  → renderReaderView() → 左侧 thumb-sidebar + 右侧 scroll-snap 预览
+  → renderReaderView() → 左侧 thumb-sidebar + 右侧 scroll-snap 预览 → header 添加 .previewing
   →
   ├── 点击混淆 → processBatchAction('encrypt')
   │     POST /api/batch/encrypt → { zipId, items[] }
@@ -234,12 +245,13 @@ drop →
 
 | 类型 | CSS class | 边框标记 |
 |---|---|---|
-| 成功 | `toast-success` | 左侧 `border-color: #2ecc71` |
-| 错误 | `toast-error` | 左侧 `border-color: #e74c3c` |
-| 信息 | `toast-info` | 左侧 `border-color: --border` |
+| 成功 | `toast-success` | 左侧 `border-color: var(--success)` |
+| 错误 | `toast-error` | 左侧 `border-color: var(--error)` |
+| 信息 | `toast-info` | 左侧 `border-color: var(--border)` |
 
 - 3 秒后自动消失，`translateX` 滑入/滑出
 - 支持连续弹出，垂直堆叠
+- 位于右下角（`bottom: 12px`），避免遮挡顶部按钮
 
 ## 进度条
 
@@ -357,12 +369,12 @@ touchend   → deltaX > 50px → scrollToImage(selectedIndex - 1)
 ## 缩略图行为
 
 | 状态 | 缩略图 | 边框色 | overlay |
-|---|---|---|---|---|
+|---|---|---|---|
 | `pending` | 显示原图（若有 file） | `var(--border)` | 无 |
 | `processing` | shimmer 占位（无图时） | `var(--border)` | — |
-| `encrypted` | 原图 + 半透明遮罩 | `var(--success)` / `#2ecc71` | "已混淆" uppercase |
-| `decrypted` | 显示 processedBlob | `var(--success)` / `#2ecc71` | 无 |
-| `error` | 显示原图 | `var(--error)` / `#e74c3c` | 错误信息 |
+| `encrypted` | 原图 + 半透明遮罩 | `#2ecc71` | "已混淆" |
+| `decrypted` | 显示 processedBlob | `#2ecc71` | 无 |
+| `error` | 显示原图 | `#e74c3c` | 错误信息 |
 
 - 每个缩略图左上角有 idx 标签，格式 `"3/10"`，背景 `var(--accent)`
 - ZIP 上传初始阶段无 `processedBlob` → 缩略图显示 shimmer 占位动画
@@ -385,80 +397,120 @@ touchend   → deltaX > 50px → scrollToImage(selectedIndex - 1)
 
 ## 设计系统
 
-### 色彩系统（低饱和单色）
+### 色彩系统（低饱和雾霾蓝）
 
 | Token | Value | 用途 |
 |---|---|---|
 | `--bg` | `#FAFAFA` | 页面背景（暖白） |
-| `--fg` | `#09090B` | 主要文字（近黑） |
-| `--muted` | `#E8ECF0` | 柔和背景 / 分割线 |
-| `--muted-fg` | `#64748B` | 辅助文字 |
-| `--border` | `#E4E4E7` | 边框色 |
-| `--accent` | `#18181B` | 强调色（深灰，仅用于关键区分） |
-| `--radius` | `4px` | 统一圆角 |
+| `--fg` | `#1B1B2F` | 主要文字（深蓝黑） |
+| `--muted` | `#E8EDF2` | 柔和背景 / 分割线 |
+| `--muted-fg` | `#7B8BA0` | 辅助文字（灰蓝） |
+| `--border` | `#1B1B2F` | 边框色（硬黑，neo-brutalist） |
+| `--accent` | `#4A6FA5` | 强调色（雾霾蓝） |
+| `--accent-hover` | `#3D5E8C` | 强调色悬停 |
+| `--accent-muted` | `#E4EAF2` | 按钮浅蓝背景 |
+| `--success` | `#2E8B57` | 成功绿 |
+| `--error` | `#C1292E` | 错误红 |
+| `--radius` | `0` | 零圆角（neo-brutalist） |
+| `--shadow` | `4px 4px 0 0 var(--border)` | 硬阴影（neo-brutalist 标志） |
+| `--shadow-sm` | `2px 2px 0 0 var(--border)` | 小阴影 |
 
-无外部 CSS 依赖，纯灰度层级。accent 仅用深浅区分，不引入彩色。
+无外部 CSS 依赖，全站 neo-brutalist 硬边框 + 硬阴影风格。
 
 ### 按钮样式
 
-- 描边风格：`background: transparent`, `border: 1.5px solid var(--border)`, `color: var(--fg)`
-- Hover：`background: var(--fg)`, `color: var(--bg)`（反转）
-- Disabled：`opacity: 0.35`, `pointer-events: none`
-- 核心操作按钮（混淆/解混淆）：`border-color: var(--accent)` 微突出
-- 按钮间 `│` 分隔符：`color: var(--border)`, `user-select: none`
+三级样式系统：
+
+| 层级 | 类 | 背景 | 用途 |
+|---|---|---|---|
+| 文件选择 | `btn-file` | `var(--accent-muted)` 浅蓝底 | 选择图片/文件夹/ZIP |
+| 核心操作 | `btn-primary` | `var(--accent)` 雾霾蓝底 + 白色字 | 混淆/解混淆 |
+| 输出管理 | `btn-secondary` | `var(--bg)` 透明底 | 还原/下载/打包下载 |
+
+共享特征：
+- `text-transform: uppercase`，`font-weight: 700`，`letter-spacing: 0.05em`
+- `border: 2px solid var(--border)`，`border-radius: 0`
+- `box-shadow: var(--shadow)`（`4px 4px 0 0`）
+- Hover 时 shadow 收回（`box-shadow: none`），背景变 accent 色
+- Active 时 shadow 收回 + 位移 `translate(4px, 4px)`
+- Disabled 时 `opacity: 0.3`，`box-shadow: none`
 
 ### Kinetic Typography
 
-#### 标题 hover 动效
+#### 标题 Scramble
 
-`h1` hover 时触发灰度扫描动画，在 `--muted` 和 `--fg` 间循环渐变，体现"混淆"概念：
+`h1` 每 8 秒自动执行一次字母乱序动画：
+
+```js
+function scrambleText(el, target, duration) {
+  // 每 50ms 随机替换一个字符，持续 duration ms
+  // 使用 SCRAMBLE_CHARS: A-Z a-z 0-9
+}
+```
+
+- 鼠标悬停标题时暂停 scramble，离开后恢复
+- 使用 `setInterval` 实现，50ms 帧率
+
+#### 状态文字 Scramble
+
+`#status` 文字变化时自动触发 scramble 动画（通过 MutationObserver 监听）：
+
+```js
+var statusObserver = new MutationObserver(function () {
+  if (statusEl.textContent !== _origStatusText) {
+    scrambleText(statusEl, newText, 400)
+    _origStatusText = newText
+  }
+})
+statusObserver.observe(statusEl, { childList: true, characterData: true, subtree: true })
+```
+
+#### 背景色漂移
+
+`body` 背景在 `#FAFAFA` 和 `#F0F4FA` 间 30 秒循环：
 
 ```css
-h1 {
-  background: linear-gradient(90deg, var(--fg), var(--muted), var(--fg));
-  background-size: 200% 100%;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+@keyframes hueDrift {
+  0%, 100% { background-color: #FAFAFA; }
+  50% { background-color: #F0F4FA; }
 }
-h1:hover {
-  animation: titleSweep 0.8s ease-in-out;
-}
-@keyframes titleSweep {
-  0% { background-position: 0% 50%; }
-  100% { background-position: 100% 50%; }
-}
+body { animation: hueDrift 30s ease-in-out infinite; }
 ```
 
 #### 状态字幕（Marquee）
 
-`#status-marquee` 位于状态文字下方，循环显示技术参数，每 5 秒切换一条：
+`#status-marquee` 位于状态文字下方，循环显示技术参数，每 5 秒切换一条，带 `slideUp` 过渡：
 
 ```
 GILBERT 2D CURVE · SPACE-FILLING · OFFSET 0.618
-↓ 5s slide transition
+↓ slideUp (transform translateY + opacity)
 PIXEL REARRANGEMENT · LOSSLESS CORE · JPEG Q95
-↓ 5s
+↓
 IMAGE CONFUSION · ENCRYPT / DECRYPT · SERVER SIDE
 ```
 
-- JS 控制：`setInterval` 5s + `textContent` 切换 + CSS `transition`
-- 字体：`0.6rem`, `color: var(--muted-fg)`, `letter-spacing: 2px`, `uppercase`
+- JS 控制：`setInterval` 5s + `transform` slide 过渡
+- 字体：`0.6rem`, `color: var(--muted-fg)`, `letter-spacing: 0.08em`, `uppercase`
 
 #### 加载点动画
 
 处理中状态文字的 `...` 通过 CSS `@keyframes` 实现逐帧动画：
 
 ```css
-.status-dots::after {
-  animation: dots 1.5s steps(3) infinite;
-}
-@keyframes dots {
-  0% { content: ''; }
-  33% { content: '.'; }
-  66% { content: '..'; }
-  100% { content: '...'; }
-}
+.status-dots::after { animation: dots 1.5s steps(3) infinite; }
+@keyframes dots { 0% { content: ''; } 33% { content: '.'; } 66% { content: '..'; } to { content: '...'; } }
 ```
+
+### 预览隐藏
+
+图片预览时 header 标题区域淡出以避免视觉干扰：
+
+```css
+.previewing h1, .previewing .desc { opacity: 0; pointer-events: none; }
+```
+
+- `setSrc()` 和 `renderReaderView()` 在显示图片时自动为 `.header` 添加 `.previewing` 类
+- 清空图片（batch 空、恢复原始）时移除 `.previewing`
 
 ### 预览滚动区
 
@@ -470,16 +522,11 @@ IMAGE CONFUSION · ENCRYPT / DECRYPT · SERVER SIDE
   flex-direction: column;
   min-height: 50vh;
   max-height: 70vh;
-  border: 2px dashed var(--border);
-  border-radius: var(--radius);
-  transition: border-color 0.2s, background 0.2s;
+  border: 2px solid var(--border);
+  transition: border-color 0.2s;
   scroll-snap-type: y mandatory;
 }
-#preview-scroll.drag-over {
-  border-color: var(--accent);
-  background: rgba(0,0,0,0.02);
-  border-style: solid;
-}
+#preview-scroll.drag-over { border-color: var(--accent); }
 .preview-item {
   position: relative;
   flex: 0 0 100%;
@@ -492,7 +539,6 @@ IMAGE CONFUSION · ENCRYPT / DECRYPT · SERVER SIDE
 .preview-item img {
   max-width: min(92vw, 800px);
   max-height: min(60vh, 500px);
-  border-radius: var(--radius);
   display: block;
   transition: opacity 0.2s ease;
 }
@@ -509,32 +555,19 @@ IMAGE CONFUSION · ENCRYPT / DECRYPT · SERVER SIDE
   gap: 4px;
   padding: 6px;
   background: #fff;
-  border-radius: var(--radius);
   max-height: 70vh;
 }
 .thumb-item {
   position: relative;
   cursor: pointer;
   border: 2px solid var(--border);
-  border-radius: 2px;
   padding: 2px;
   text-align: center;
   flex: 0 0 auto;
   transition: border-color 0.15s;
 }
-.thumb-item:hover {
-  border-color: var(--muted-fg);
-}
-.thumb-item.active {
-  border-color: var(--accent);
-  background: rgba(0,0,0,0.03);
-}
-.thumb-item img {
-  width: 100%;
-  height: 56px;
-  object-fit: cover;
-  display: block;
-}
+.thumb-item:hover { border-color: var(--muted-fg); }
+.thumb-item.active { border-color: var(--accent); background: rgba(0,0,0,0.03); }
 .thumb-idx {
   position: absolute;
   top: 1px; left: 1px;
@@ -544,19 +577,6 @@ IMAGE CONFUSION · ENCRYPT / DECRYPT · SERVER SIDE
   padding: 1px 4px;
   line-height: 1.3;
 }
-.thumb-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 0.55rem;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  pointer-events: none;
-}
 ```
 
 ### Toast
@@ -564,7 +584,7 @@ IMAGE CONFUSION · ENCRYPT / DECRYPT · SERVER SIDE
 ```css
 #toast-container {
   position: fixed;
-  top: 12px; right: 12px;
+  bottom: 12px; right: 12px;
   z-index: 9999;
   display: flex;
   flex-direction: column;
@@ -573,27 +593,20 @@ IMAGE CONFUSION · ENCRYPT / DECRYPT · SERVER SIDE
 }
 .toast {
   padding: 10px 16px;
-  border: 1.5px solid var(--border);
+  border: 2px solid var(--border);
   border-left: 4px solid var(--border);
   background: #fff;
   color: var(--fg);
   font-size: 0.85rem;
-  border-radius: var(--radius);
   animation: toastIn 0.25s ease;
   pointer-events: auto;
   max-width: 360px;
 }
-.toast-success { border-left-color: #2ecc71; }
-.toast-error { border-left-color: #e74c3c; }
+.toast-success { border-left-color: var(--success); }
+.toast-error { border-left-color: var(--error); }
 .toast-out { animation: toastOut 0.2s ease-in forwards; }
-@keyframes toastIn {
-  from { opacity: 0; transform: translateX(60px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-@keyframes toastOut {
-  from { opacity: 1; transform: translateX(0); }
-  to { opacity: 0; transform: translateX(60px); }
-}
+@keyframes toastIn { from { opacity: 0; transform: translateX(60px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes toastOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(60px); } }
 ```
 
 ### Spinner
@@ -616,7 +629,7 @@ IMAGE CONFUSION · ENCRYPT / DECRYPT · SERVER SIDE
 
 ```css
 #progress-wrap.show { display: flex; }
-#progress-bar { width: 200px; height: 6px; background: var(--muted); overflow: hidden; }
+#progress-bar { width: 200px; height: 6px; background: var(--muted); }
 #progress-bar .bar-fill { height: 100%; background: var(--accent); transition: width 0.2s; width: 0%; }
 #progress-label { font-size: 0.75rem; color: var(--muted-fg); }
 ```
@@ -628,8 +641,9 @@ IMAGE CONFUSION · ENCRYPT / DECRYPT · SERVER SIDE
 | >=768px | `flex-direction: row` | `width: 140px` 纵向排列 | `flex: 0 0 auto` | `max-h: min(60vh, 500px)` |
 | <768px | `flex-direction: column` | `width: 100%` 横向滚动，max-h: 80px | `flex: 0 0 64px` | `max-height: 40vh` |
 
-- `<768px` 时按钮缩小至 `height: 1.8rem; font-size: 0.7rem`
+- `<768px` 时按钮缩小至 `padding: 0.5rem 0.8rem; font-size: 0.7rem`
 - 预览区 `min-height: 40vh; max-height: 55vh`
+- `<768px` 时 body padding 从 `1.5rem 2rem` 缩小为 `1rem`
 
 ## 关于 `prefers-reduced-motion`
 
@@ -652,4 +666,3 @@ IMAGE CONFUSION · ENCRYPT / DECRYPT · SERVER SIDE
 - `scroll-snap` (Chrome 69+, Firefox 68+, Edge 79+)
 - `<a download>` 要求 `<a>` 在 DOM 树中（Firefox 限制）
 - `webkitdirectory` 仅 Chrome / Edge 支持
-- `background-clip: text` (Chrome 91+, Firefox 90+, Safari 15.4+)

@@ -19,7 +19,7 @@
 | 服务入口 | `src/index.ts` | Hono HTTP 路由，请求处理 |
 | Gilbert 曲线 | `src/gilbert.ts` | 任意尺寸矩形空间填充曲线生成 |
 | 混淆引擎 | `src/confuse.ts` | 像素级混淆/解混淆（Uint8Array 操作） |
-| 前端渲染 | `src/ui.ts` | `renderPage()` 生成完整 HTML/CSS/JS（阅读器布局、拖拽、Toast、进度条、键盘导航） |
+| 前端渲染 | `src/ui.ts` | `renderPage()` 生成完整 HTML/CSS/JS（阅读器布局、拖拽、Toast、进度条、键盘导航、Kinetic Typography） |
 | 服务入口 | `src/index.ts` | Hono HTTP 路由，请求处理，调用 `renderPage()` |
 | 批处理引擎 | `src/batch.ts` | 临时存储管理、ZIP 打包（archiver）、ZIP 解压（tar）、TTL 清理 |
 
