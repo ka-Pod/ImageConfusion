@@ -26,7 +26,7 @@ h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; margin: 0; tran
 .controls { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 .btn { position: relative; display: inline-flex; align-items: center; justify-content: center; padding: 0.7rem 1.2rem; border: 2px solid var(--border); border-radius: var(--radius); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; background: var(--bg); color: var(--fg); box-shadow: var(--shadow); transition: background 0.12s, box-shadow 0.12s, transform 0.12s, color 0.12s; }
 .btn:hover { background: var(--accent); color: #fff; }
-.btn:active { box-shadow: none; transform: translate(4px, 4px); }
+.btn:active, .btn:focus { box-shadow: none; transform: translate(4px, 4px); }
 .btn:disabled { opacity: 0.3; box-shadow: none; pointer-events: none; }
 .btn input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .btn-file { background: var(--accent-muted); }
