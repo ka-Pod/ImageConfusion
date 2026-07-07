@@ -21,7 +21,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", ui-sans-serif
 .header-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
 .header-title { border-left: 4px solid var(--accent); padding-left: 1rem; }
 h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; margin: 0; transition: opacity 0.4s ease; }
-.desc { max-width: 480px; margin: 0; padding-left: calc(1rem + 4px); font-size: 0.85rem; color: var(--muted-fg); line-height: 1.6; animation: letterPulse 4s ease-in-out infinite; transition: opacity 0.4s ease; }
+.desc { max-width: 480px; margin: 0; padding-left: calc(1rem + 4px); font-size: 0.85rem; color: var(--muted-fg); line-height: 1.6; }
 .previewing h1, .previewing .desc { opacity: 0; pointer-events: none; }
 .controls { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 .btn { position: relative; display: inline-flex; align-items: center; justify-content: center; padding: 0.7rem 1.2rem; border: 2px solid var(--border); border-radius: var(--radius); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; background: var(--bg); color: var(--fg); box-shadow: var(--shadow); transition: background 0.12s, box-shadow 0.12s, transform 0.12s, color 0.12s; }
