@@ -13,9 +13,23 @@ describe('renderPage', () => {
     const { renderPage } = await import('./ui')
     const html = renderPage()
     expect(html).toContain('id="ipt"')
-    expect(html).toContain('id="multi"')
+    expect(html).toContain('multiple')
     expect(html).toContain('id="dir"')
     expect(html).toContain('id="zip-upload"')
+  })
+
+  test('includes status marquee', async () => {
+    const { renderPage } = await import('./ui')
+    const html = renderPage()
+    expect(html).toContain('id="status-marquee"')
+  })
+
+  test('includes batch mode UI classes', async () => {
+    const { renderPage } = await import('./ui')
+    const html = renderPage()
+    expect(html).toContain('preview-counter')
+    expect(html).toContain('preview-nav')
+    expect(html).toContain('shimmer-placeholder')
   })
 
   test('includes control buttons', async () => {
