@@ -1,0 +1,10 @@
+{
+  "buildCommand": null,
+  "outputDirectory": ".",
+  "functions": {
+    "src/index.ts": {
+      "runtime": "nodejs@20.x",
+      "maxDuration": 30
+    }
+  }
+}

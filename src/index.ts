@@ -227,7 +227,4 @@ log('INFO', `Server starting on http://localhost:${port}`)
 
 export { app }
 
-export default {
-  port,
-  fetch: app.fetch,
-}
+export default app.fetch

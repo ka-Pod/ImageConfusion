@@ -1,10 +1,10 @@
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { mkdir, rm, writeFile, readFile, readdir, stat } from 'node:fs/promises'
-import { existsSync, mkdtempSync, writeFileSync, readFileSync, readdirSync } from 'node:fs'
-import { execSync } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 import { ZipArchive } from 'archiver'
+import unzipper from 'unzipper'
 import sharp from 'sharp'
 import { encryptPixels, decryptPixels } from './confuse'
 
@@ -87,25 +87,26 @@ export async function createZipFile(files: { name: string; buffer: Buffer }[]): 
 const IMAGE_EXTENSIONS = /\.(png|jpg|jpeg|webp)$/i
 
 export async function extractZipBuffer(zipBuffer: Buffer): Promise<{ name: string; buffer: Buffer }[]> {
-  const tmpDir = mkdtempSync(join(tmpdir(), 'zip-extract-'))
-  const zipPath = join(tmpDir, 'input.zip')
-  writeFileSync(zipPath, zipBuffer)
+  const result: { name: string; buffer: Buffer }[] = []
 
   try {
-    execSync(`tar -xf "${zipPath}" -C "${tmpDir}"`, { stdio: 'pipe' })
+    const directory = await unzipper.Open.buffer(zipBuffer)
 
-    const entries = readdirSync(tmpDir).filter(f => f !== 'input.zip')
+    for (const file of directory.files) {
+      if (file.type === 'Directory') continue
+      if (!IMAGE_EXTENSIONS.test(file.path)) continue
 
-    const result: { name: string; buffer: Buffer }[] = []
-    for (const entry of entries) {
-      if (!IMAGE_EXTENSIONS.test(entry)) continue
-      result.push({ name: entry, buffer: readFileSync(join(tmpDir, entry)) })
+      const chunks: Buffer[] = []
+      for await (const chunk of file.stream()) {
+        chunks.push(chunk)
+      }
+      result.push({ name: file.path, buffer: Buffer.concat(chunks) })
     }
-
-    return result
-  } finally {
-    await rm(tmpDir, { recursive: true, force: true }).catch(() => {})
+  } catch (err) {
+    throw new Error(`ZIP 解压失败: ${err instanceof Error ? err.message : String(err)}`)
   }
+
+  return result
 }
 
 export async function saveZipFile(sessionId: string, buffer: Buffer): Promise<string> {

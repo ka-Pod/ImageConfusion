@@ -1,5 +1,6 @@
 import { appendFile, mkdir } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 type LogLevel = 'INFO' | 'WARN' | 'ERROR'
@@ -17,14 +18,31 @@ function timeStamp(): string {
 }
 
 function logFilePath(): string {
-  return join(process.cwd(), 'logs', `${dateStamp()}.log`)
+  return join(logDir(), `${dateStamp()}.log`)
 }
 
-async function ensureLogDir(): Promise<void> {
-  const dir = join(process.cwd(), 'logs')
-  if (!existsSync(dir)) {
-    await mkdir(dir, { recursive: true })
+async function ensureLogDir(): Promise<string> {
+  const paths = [join(process.cwd(), 'logs'), join(tmpdir(), 'logs')]
+  for (const dir of paths) {
+    if (!existsSync(dir)) {
+      try {
+        await mkdir(dir, { recursive: true })
+        return dir
+      } catch {
+        continue
+      }
+    }
+    return dir
   }
+  throw new Error('cannot create log directory')
+}
+
+function logDir(): string {
+  const paths = [join(process.cwd(), 'logs'), join(tmpdir(), 'logs')]
+  for (const dir of paths) {
+    if (existsSync(dir)) return dir
+  }
+  return join(process.cwd(), 'logs')
 }
 
 export async function log(level: LogLevel, message: string): Promise<void> {
