@@ -13,8 +13,7 @@
 │                   图片混淆（标题）                  │
 │         基于空间填充曲线的图片混淆...（描述文字）      │
 │                                                   │
-│  [选择图片] [选多张图片] [选文件夹] [上传ZIP]        │
-│  [混淆] [解混淆] [还原] [下载] [打包下载]            │
+│  [选择图片] [选择文件夹] [上传ZIP] │ [混淆] [解混淆] │ [还原] [下载] [打包下载] │
 │                   ↕ progress-wrap                  │
 │                   ↕ spinner                        │
 │  ┌──────────────────────────────────────────────┐  │
@@ -65,9 +64,8 @@
 
 | 元素 | ID | 说明 |
 |---|---|---|
-| 文件输入（单图） | `ipt` | `accept="image/*"` |
-| 文件输入（多张） | `multi` | `multiple accept="image/*"` |
-| 文件输入（文件夹） | `dir` | `webkitdirectory` |
+| 文件输入（单/多图） | `ipt` | `accept="image/*" multiple`，支持单选和多选 |
+| 文件输入（文件夹） | `dir` | `webkitdirectory multiple` |
 | 文件输入（ZIP） | `zip-upload` | `accept=".zip"` |
 | 混淆按钮 | `enc` | 单图 / 批量共用 |
 | 解混淆按钮 | `dec` | 单图 / 批量共用 |
@@ -79,26 +77,33 @@
 | 进度条容器 | `progress-wrap` | 含 `#progress-bar .bar-fill` + `#progress-label` |
 | Spinner | `spinner` | CSS 旋转动画 |
 | 状态文字 | `status` | 底部状态显示 |
+| 状态字幕 | `status-marquee` | 底部 Kinetic Typography 字幕行 |
 | Toast 容器 | `toast-container` | fixed 右上角，z-index: 9999 |
 
-## 按钮
+## 按钮布局
 
-| 按钮 | ID | 颜色 | 默认状态 | 功能 |
+三组视觉分隔：
+
+```
+[选择图片] [选择文件夹] [上传ZIP]  │  [混淆] [解混淆]  │  [还原] [下载] [打包下载]
+   ├── 输入组 ──┤     │   ├── 核心操作 ─┤     │   ├── 输出/管理 ──────┤
+```
+
+| 按钮 | ID | 样式 | 默认状态 | 功能 |
 |---|---|---|---|---|
-| 选择图片 | `ipt` | `#180161` | 始终可用 | 打开文件选择器（`image/*`） |
-| 选多张图片 | `multi` | `#180161` | 始终可用 | `multiple accept="image/*"` |
-| 选文件夹 | `dir` | `#180161` | 始终可用 | `webkitdirectory` |
-| 上传 ZIP | `zip-upload` | `#180161` | 始终可用 | `accept=".zip"` |
-| 混淆 | `enc` | `#4f1787` | disabled | 单图/批量 encrypt |
-| 解混淆 | `dec` | `#eb3678` | disabled | 单图/批量 decrypt |
-| 还原 | `re` | `#fb773c` | disabled | 单图恢复原始 / 批量跳转第一张 |
-| 下载 | `download` | `#2ecc71` | disabled | 下载当前显示图片 |
-| 打包下载 | `batch-dl` | `#2ecc71` | disabled | 下载 encrypt/decrypt ZIP |
+| 选择图片 | `ipt` | 描边 | 始终可用 | 打开文件选择器（单张或批量） |
+| 选择文件夹 | `dir` | 描边 | 始终可用 | `webkitdirectory` 批量选择 |
+| 上传 ZIP | `zip-upload` | 描边 | 始终可用 | 上传加密 ZIP 批量解密 |
+| 混淆 | `enc` | 描边 + accent | disabled | 单图/批量 encrypt |
+| 解混淆 | `dec` | 描边 + accent | disabled | 单图/批量 decrypt |
+| 还原 | `re` | 描边 | disabled | 单图恢复原始 / 批量跳转首页 |
+| 下载 | `download` | 描边 | disabled | 下载当前显示图片 |
+| 打包下载 | `batch-dl` | 描边 | disabled | 下载 encrypt/decrypt ZIP |
 
 ## 单图模式交互流程
 
 ```
-选择图片 → #preview-scroll 显示单张 .preview-item → 按钮启用
+选择单张图片 → #preview-scroll 显示 .preview-item → 按钮启用
    │
    ├── 点击混淆 ──→ spinner → POST /api/encrypt → setSrc(blob) → showToast("混淆完成")
    │
@@ -201,24 +206,24 @@ type BatchItem = {
 放置区为 `#preview-scroll` 元素。
 
 ```
-dragenter → dragCount++ → 添加 .drag-over 类（紫色虚线边框+背景）
+dragenter → dragCount++ → 添加 .drag-over 类
 dragover  → e.preventDefault()（允许放置）
 dragleave → dragCount-- → dragCount === 0 时移除 .drag-over
 drop →
   ├── 单个 .zip 文件 → 触发 zip-upload change 事件
   ├── 单张图片 → 触发 ipt change 事件（单图模式）
-  └── 多张图片 → 触发 multiIpt change 事件（批量模式）
+  └── 多张图片 → 触发 ipt change 事件（批量模式，ipt 支持 multiple）
 ```
 
 ## Toast 通知
 
-| 类型 | CSS class | 底色 |
+| 类型 | CSS class | 边框标记 |
 |---|---|---|
-| 成功 | `toast-success` | `#2ecc71` |
-| 错误 | `toast-error` | `#e74c3c` |
-| 信息 | `toast-info` | `#4f1787` |
+| 成功 | `toast-success` | 左侧 `border-color: #2ecc71` |
+| 错误 | `toast-error` | 左侧 `border-color: #e74c3c` |
+| 信息 | `toast-info` | 左侧 `border-color: --border` |
 
-- 3 秒后自动消失，滑出动画（`translateX(80px)` → `0` → `80px`）
+- 3 秒后自动消失，`translateX` 滑入/滑出
 - 支持连续弹出，垂直堆叠
 
 ## 进度条
@@ -294,13 +299,82 @@ new IntersectionObserver((entries) => {
 - Encrypt: `POST /api/batch/download?zipId=xxx` → 返回 `encrypt_results.zip`
 - Decrypt: `POST /api/batch/download { sessionId, ids[] }` → 返回 `decrypt_results.zip`
 
-## CSS 样式规范
+## 设计系统
 
-### 基础
+### 色彩系统（低饱和单色）
 
-- 无外部 CSS 依赖
-- 使用 `-apple-system` 字体栈
-- 按钮统一使用 `.btn` 基类 + 独立颜色 class
+| Token | Value | 用途 |
+|---|---|---|
+| `--bg` | `#FAFAFA` | 页面背景（暖白） |
+| `--fg` | `#09090B` | 主要文字（近黑） |
+| `--muted` | `#E8ECF0` | 柔和背景 / 分割线 |
+| `--muted-fg` | `#64748B` | 辅助文字 |
+| `--border` | `#E4E4E7` | 边框色 |
+| `--accent` | `#18181B` | 强调色（深灰，仅用于关键区分） |
+| `--radius` | `4px` | 统一圆角 |
+
+无外部 CSS 依赖，纯灰度层级。accent 仅用深浅区分，不引入彩色。
+
+### 按钮样式
+
+- 描边风格：`background: transparent`, `border: 1.5px solid var(--border)`, `color: var(--fg)`
+- Hover：`background: var(--fg)`, `color: var(--bg)`（反转）
+- Disabled：`opacity: 0.35`, `pointer-events: none`
+- 核心操作按钮（混淆/解混淆）：`border-color: var(--accent)` 微突出
+- 按钮间 `│` 分隔符：`color: var(--border)`, `user-select: none`
+
+### Kinetic Typography
+
+#### 标题 hover 动效
+
+`h1` hover 时触发灰度扫描动画，在 `--muted` 和 `--fg` 间循环渐变，体现"混淆"概念：
+
+```css
+h1 {
+  background: linear-gradient(90deg, var(--fg), var(--muted), var(--fg));
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+h1:hover {
+  animation: titleSweep 0.8s ease-in-out;
+}
+@keyframes titleSweep {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+```
+
+#### 状态字幕（Marquee）
+
+`#status-marquee` 位于状态文字下方，循环显示技术参数，每 5 秒切换一条：
+
+```
+GILBERT 2D CURVE · SPACE-FILLING · OFFSET 0.618
+↓ 5s slide transition
+PIXEL REARRANGEMENT · LOSSLESS CORE · JPEG Q95
+↓ 5s
+IMAGE CONFUSION · ENCRYPT / DECRYPT · SERVER SIDE
+```
+
+- JS 控制：`setInterval` 5s + `textContent` 切换 + CSS `transition`
+- 字体：`0.6rem`, `color: var(--muted-fg)`, `letter-spacing: 2px`, `uppercase`
+
+#### 加载点动画
+
+处理中状态文字的 `...` 通过 CSS `@keyframes` 实现逐帧动画：
+
+```css
+.status-dots::after {
+  animation: dots 1.5s steps(3) infinite;
+}
+@keyframes dots {
+  0% { content: ''; }
+  33% { content: '.'; }
+  66% { content: '..'; }
+  100% { content: '...'; }
+}
+```
 
 ### 预览滚动区
 
@@ -308,28 +382,35 @@ new IntersectionObserver((entries) => {
 #preview-scroll {
   flex: 1;
   overflow-y: auto;
-  scroll-snap-type: y mandatory;
-  border: 2px dashed #ddd;
-  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
   min-height: 50vh;
   max-height: 70vh;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  transition: border-color 0.2s, background 0.2s;
+  scroll-snap-type: y mandatory;
 }
 #preview-scroll.drag-over {
-  border-color: #4f1787;
-  background: rgba(79, 23, 135, 0.04);
+  border-color: var(--accent);
+  background: rgba(0,0,0,0.02);
+  border-style: solid;
 }
 .preview-item {
+  position: relative;
   flex: 0 0 100%;
   scroll-snap-align: start;
-  min-height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 100%;
 }
 .preview-item img {
   max-width: min(92vw, 800px);
   max-height: min(60vh, 500px);
-  border-radius: 6px;
+  border-radius: var(--radius);
+  display: block;
+  transition: opacity 0.2s ease;
 }
 ```
 
@@ -339,41 +420,58 @@ new IntersectionObserver((entries) => {
 #thumb-sidebar {
   width: 140px;
   overflow-y: auto;
+  display: none;
   flex-direction: column;
   gap: 4px;
   padding: 6px;
   background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  border-radius: var(--radius);
   max-height: 70vh;
 }
 .thumb-item {
-  flex: 0 0 auto;
+  position: relative;
   cursor: pointer;
-  border: 2px solid #e0e0e0;
-  border-radius: 4px;
+  border: 2px solid var(--border);
+  border-radius: 2px;
   padding: 2px;
   text-align: center;
+  flex: 0 0 auto;
+  transition: border-color 0.15s;
+}
+.thumb-item:hover {
+  border-color: var(--muted-fg);
 }
 .thumb-item.active {
-  border-color: #4f1787;
-  background: rgba(79, 23, 135, 0.04);
+  border-color: var(--accent);
+  background: rgba(0,0,0,0.03);
 }
 .thumb-item img {
   width: 100%;
   height: 56px;
   object-fit: cover;
-  border-radius: 2px;
+  display: block;
 }
 .thumb-idx {
   position: absolute;
   top: 1px; left: 1px;
-  background: rgba(0,0,0,0.6);
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.5rem;
+  padding: 1px 4px;
+  line-height: 1.3;
+}
+.thumb-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: #fff;
   font-size: 0.55rem;
-  padding: 0 3px;
-  border-radius: 2px;
-  line-height: 1.3;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  pointer-events: none;
 }
 ```
 
@@ -391,31 +489,52 @@ new IntersectionObserver((entries) => {
 }
 .toast {
   padding: 10px 16px;
-  border-radius: 6px;
-  color: #fff;
+  border: 1.5px solid var(--border);
+  border-left: 4px solid var(--border);
+  background: #fff;
+  color: var(--fg);
   font-size: 0.85rem;
+  border-radius: var(--radius);
   animation: toastIn 0.25s ease;
   pointer-events: auto;
   max-width: 360px;
 }
-.toast-out { animation: toastOut 0.25s ease forwards; }
+.toast-success { border-left-color: #2ecc71; }
+.toast-error { border-left-color: #e74c3c; }
+.toast-out { animation: toastOut 0.2s ease-in forwards; }
 @keyframes toastIn {
-  from { opacity: 0; transform: translateX(80px); }
+  from { opacity: 0; transform: translateX(60px); }
   to { opacity: 1; transform: translateX(0); }
 }
 @keyframes toastOut {
   from { opacity: 1; transform: translateX(0); }
-  to { opacity: 0; transform: translateX(80px); }
+  to { opacity: 0; transform: translateX(60px); }
 }
+```
+
+### Spinner
+
+```css
+.spinner {
+  display: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--muted);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  margin: 0.4rem auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 ```
 
 ### 进度条
 
 ```css
 #progress-wrap.show { display: flex; }
-#progress-bar { width: 200px; height: 6px; background: #e0e0e0; border-radius: 3px; overflow: hidden; }
-#progress-bar .bar-fill { height: 100%; background: #4f1787; transition: width 0.2s; }
-#progress-label { font-size: 0.8rem; color: #888; }
+#progress-bar { width: 200px; height: 6px; background: var(--muted); overflow: hidden; }
+#progress-bar .bar-fill { height: 100%; background: var(--accent); transition: width 0.2s; width: 0%; }
+#progress-label { font-size: 0.75rem; color: var(--muted-fg); }
 ```
 
 ## 响应式布局
@@ -425,8 +544,22 @@ new IntersectionObserver((entries) => {
 | >=768px | `flex-direction: row` | `width: 140px` 纵向排列 | `flex: 0 0 auto` | `max-h: min(60vh, 500px)` |
 | <768px | `flex-direction: column` | `width: 100%` 横向滚动，max-h: 80px | `flex: 0 0 64px` | `max-height: 40vh` |
 
-- `<768px` 时按钮缩小至 `height: 1.8rem; font-size: 0.75rem`
+- `<768px` 时按钮缩小至 `height: 1.8rem; font-size: 0.7rem`
 - 预览区 `min-height: 40vh; max-height: 55vh`
+
+## 关于 `prefers-reduced-motion`
+
+所有动画在用户启用系统减少动效时自动降级：
+
+```css
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+```
 
 ## 浏览器兼容性
 
@@ -435,3 +568,4 @@ new IntersectionObserver((entries) => {
 - `scroll-snap` (Chrome 69+, Firefox 68+, Edge 79+)
 - `<a download>` 要求 `<a>` 在 DOM 树中（Firefox 限制）
 - `webkitdirectory` 仅 Chrome / Edge 支持
+- `background-clip: text` (Chrome 91+, Firefox 90+, Safari 15.4+)
