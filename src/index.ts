@@ -223,7 +223,11 @@ app.onError((err, c) => {
 })
 
 const port = parseInt(process.env.PORT || '3000', 10)
-log('INFO', `Server starting on http://localhost:${port}`)
+
+if (!process.env.VERCEL) {
+  Bun.serve({ port, fetch: app.fetch })
+  log('INFO', `Server starting on http://localhost:${port}`)
+}
 
 export { app }
 
