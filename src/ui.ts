@@ -26,7 +26,7 @@ h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; margin: 0; tran
 .controls { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 .btn { position: relative; display: inline-flex; align-items: center; justify-content: center; padding: 0.7rem 1.2rem; border: 2px solid var(--border); border-radius: var(--radius); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; background: var(--bg); color: var(--fg); box-shadow: var(--shadow); transition: background 0.12s, box-shadow 0.12s, transform 0.12s, color 0.12s; }
 .btn:hover { background: var(--accent); color: #fff; }
-.btn:active { box-shadow: var(--shadow-sm); transform: translate(2px, 2px); }
+.btn:active { box-shadow: none; transform: translate(4px, 4px); }
 .btn:disabled { opacity: 0.3; box-shadow: none; pointer-events: none; }
 .btn input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .btn-file { background: var(--accent-muted); }
@@ -60,7 +60,7 @@ h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; margin: 0; tran
 .shimmer-placeholder { background: linear-gradient(90deg,var(--muted) 25%,#f0f0f0 50%,var(--muted) 75%); background-size: 200% 100%; animation: shimmer 1.5s ease-in-out infinite; min-height: 200px; width: 100%; }
 .drop-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 40vh; color: var(--muted-fg); font-size: 1rem; cursor: default; user-select: none; }
 .drop-placeholder .drop-icon { font-size: 2.5rem; margin-bottom: .5rem; line-height: 1; }
-#toast-container { position: fixed; top: 12px; right: 12px; z-index: 9999; display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
+#toast-container { position: fixed; bottom: 12px; right: 12px; z-index: 9999; display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
 .toast { padding: 10px 16px; border: 2px solid var(--border); border-left: 4px solid var(--border); background: #fff; color: var(--fg); font-size: .85rem; animation: toastIn .25s ease; pointer-events: auto; max-width: 360px; }
 .toast-success { border-left-color: var(--success); }
 .toast-error { border-left-color: var(--error); }
