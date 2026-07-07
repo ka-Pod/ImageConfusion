@@ -1,7 +1,7 @@
 import { Hono, type Context } from 'hono'
 import sharp from 'sharp'
-import { encryptPixels, decryptPixels } from '../src/confuse'
-import { log } from '../src/logger'
+import { encryptPixels, decryptPixels } from './confuse'
+import { log } from './logger'
 import {
   processBatch,
   getProcessedImage,
@@ -11,7 +11,7 @@ import {
   createZipFile,
   cleanupSession,
   extractZipBuffer,
-} from '../src/batch'
+} from './batch'
 
 async function processImageAction(
   c: Context,
@@ -83,7 +83,7 @@ api.post('/batch/encrypt', async (c) => {
     for (const item of items) {
       if (item.error) continue
       const buf = await getProcessedImage(sessionId, item.id)
-      if (buf) zipFiles.push({ name: item.processedName, buffer: buf }) 
+      if (buf) zipFiles.push({ name: item.processedName, buffer: buf })
     }
     const finalZip = await createZipFile(zipFiles)
     await saveZipFile(sessionId, finalZip)
