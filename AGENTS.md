@@ -70,7 +70,6 @@ bun test
 - 文件名使用 kebab-case（如 `gilbert.ts`, `confuse.ts`）
 - 禁止使用 `any`，优先 `unknown`
 - 异步操作使用 `async/await`，禁止裸 `.then()`
-- 记得写docs
 
 ## 5. 调试与排错
 
