@@ -106,7 +106,7 @@ describe('renderPage', () => {
     const { renderPage } = await import('./ui')
     const html = renderPage()
     expect(html).toContain('4px 4px 0 0')
-    expect(html).toContain('border-radius: 0')
+    expect(html).toContain('--radius: 0')
   })
 
   test('has preview title hide', async () => {
