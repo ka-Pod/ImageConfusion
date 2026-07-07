@@ -13,6 +13,10 @@ import {
   extractZipBuffer,
 } from './batch'
 
+function sanitizeFilename(name: string): string {
+  return name.replace(/[^\w\u4e00-\u9fa5.\-]/g, '_')
+}
+
 async function processImageAction(
   c: Context,
   action: 'encrypt' | 'decrypt',
@@ -50,9 +54,10 @@ async function processImageAction(
 
     await log('INFO', `${action} success: ${width}x${height} ${file.name}`)
 
+    const safeFilename = sanitizeFilename(`${action}_${file.name}`)
     return c.body(new Uint8Array(output), 200, {
       'Content-Type': 'image/jpeg',
-      'Content-Disposition': `inline; filename="${action}_${file.name}"`,
+      'Content-Disposition': `inline; filename="${safeFilename}"`,
     })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)

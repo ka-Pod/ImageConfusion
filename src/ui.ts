@@ -158,18 +158,20 @@ const progressLabel = document.getElementById('progress-label')
 
 /* === Kinetic Typography === */
 var scrambleTimer = null
+var titleScrambleTimer = null
 var SCRAMBLE_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
 
-function scrambleText(el, target, duration) {
+function scrambleText(el, target, duration, isTitle) {
   duration = duration || 600
   var frame = 0
   var frames = Math.floor(duration / 50)
-  if (scrambleTimer) { clearInterval(scrambleTimer); el.textContent = target; return }
-  scrambleTimer = setInterval(function () {
+  var timerRef = isTitle ? 'titleScrambleTimer' : 'scrambleTimer'
+  if (window[timerRef]) { clearInterval(window[timerRef]); el.textContent = target; return }
+  window[timerRef] = setInterval(function () {
     frame++
     if (frame >= frames) {
-      clearInterval(scrambleTimer)
-      scrambleTimer = null
+      clearInterval(window[timerRef])
+      window[timerRef] = null
       el.textContent = target
       return
     }
@@ -185,14 +187,14 @@ function scrambleText(el, target, duration) {
 var titleEl = document.querySelector('h1')
 if (titleEl) {
   var titleTarget = titleEl.textContent
-  var titleScrambleInterval = setInterval(function () { scrambleText(titleEl, titleTarget, 600) }, 8000)
+  var titleScrambleInterval = setInterval(function () { scrambleText(titleEl, titleTarget, 600, true) }, 8000)
   titleEl.addEventListener('mouseenter', function () {
     clearInterval(titleScrambleInterval)
-    if (scrambleTimer) { clearInterval(scrambleTimer); scrambleTimer = null }
+    if (titleScrambleTimer) { clearInterval(titleScrambleTimer); titleScrambleTimer = null }
     titleEl.textContent = titleTarget
   })
   titleEl.addEventListener('mouseleave', function () {
-    titleScrambleInterval = setInterval(function () { scrambleText(titleEl, titleTarget, 600) }, 8000)
+    titleScrambleInterval = setInterval(function () { scrambleText(titleEl, titleTarget, 600, true) }, 8000)
   })
 }
 
@@ -261,6 +263,10 @@ function observeItems() {
 
 /* === Rendering === */
 function setSrc(url) {
+  var oldImg = previewScroll.querySelector('img')
+  if (oldImg && oldImg.src && oldImg.src.startsWith('blob:')) {
+    URL.revokeObjectURL(oldImg.src)
+  }
   previewScroll.innerHTML = ''
   var header = document.querySelector('.header')
   if (header) header.classList.add('previewing')
@@ -273,6 +279,16 @@ function setSrc(url) {
 }
 
 function renderReaderView() {
+  previewScroll.querySelectorAll('img').forEach(function(img) {
+    if (img.src && img.src.startsWith('blob:')) {
+      URL.revokeObjectURL(img.src)
+    }
+  })
+  thumbSidebar.querySelectorAll('img').forEach(function(img) {
+    if (img.src && img.src.startsWith('blob:')) {
+      URL.revokeObjectURL(img.src)
+    }
+  })
   previewScroll.innerHTML = ''
   thumbSidebar.innerHTML = ''
 
@@ -435,7 +451,21 @@ if (marqueeEl) {
 ipt.onchange = function () {
   if (ipt.files.length === 0) return
   if (ipt.files.length === 1) {
+    if (batchMode && sessionId) {
+      fetch('/api/batch/cleanup', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId })
+      }).catch(function () {})
+    }
+    if (batchItems) {
+      batchItems.forEach(function (item) {
+        if (item.processedBlob) URL.revokeObjectURL(item.processedBlob)
+      })
+    }
     batchMode = false
+    batchItems = []
+    sessionId = null
+    zipId = null
+    selectedIndex = -1
     thumbSidebar.style.display = 'none'
     batchDlBtn.disabled = true
     var header = document.querySelector('.header')
