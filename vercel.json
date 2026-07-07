@@ -1,6 +1,5 @@
 {
-  "buildCommand": null,
-  "outputDirectory": ".",
+  "bunVersion": "1.x",
   "functions": {
     "src/index.ts": {
       "maxDuration": 30
