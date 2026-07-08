@@ -2,6 +2,13 @@
 
 All notable changes to ImageConfusion will be documented in this file.
 
+## [v1.4.7] - 2026-07-08
+
+### Fixed
+
+- **Image not centered**: Add margin: 0 auto to horizontally center image in preview area
+- **Layout jump during encryption/decryption**: Remove scroll-snap-type to prevent DOM change jumps
+
 ## [v1.4.6] - 2026-07-08
 
 ### Fixed
