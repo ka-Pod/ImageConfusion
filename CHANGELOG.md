@@ -2,6 +2,13 @@
 
 All notable changes to ImageConfusion will be documented in this file.
 
+## [v1.4.6] - 2026-07-08
+
+### Fixed
+
+- **Layout shift during encryption/decryption**: Spinner now uses absolute positioning, processImage uses shimmer placeholder to maintain container height
+- **Restore button not working**: Store original File object instead of blob URL to prevent URL revocation issues
+
 ## [v1.4.5] - 2026-07-08
 
 ### Fixed
