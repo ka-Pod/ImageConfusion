@@ -776,22 +776,43 @@ batchDlBtn.onclick = async function () {
 async function processImage(action) {
   var imgEl = previewScroll.querySelector('.preview-item img')
   if (!imgEl) return
+  
+  // Save current image container and src
+  var previewItem = imgEl.parentElement
+  var originalImgSrc = imgEl.src
+  
+  // Replace with shimmer placeholder to maintain height
+  var shimmer = document.createElement('div')
+  shimmer.className = 'shimmer-placeholder'
+  shimmer.style.minHeight = imgEl.offsetHeight + 'px'
+  previewItem.replaceChild(shimmer, imgEl)
+  
   spinner.style.display = 'block'
   status.textContent = action === 'encrypt' ? '混淆中...' : '解混淆中...'
   encBtn.disabled = true; decBtn.disabled = true
 
   try {
-    var blob = await fetch(imgEl.src).then(function (r) { return r.blob() })
+    var blob = await fetch(originalImgSrc).then(function (r) { return r.blob() })
     var form = new FormData()
     form.append('image', blob, 'image.jpeg')
     var res = await fetch('/api/' + action, { method: 'POST', body: form })
     if (!res.ok) throw new Error('HTTP ' + res.status)
     var resultBlob = await res.blob()
-    setSrc(URL.createObjectURL(resultBlob))
+    
+    // Replace shimmer with result image
+    var newImg = document.createElement('img')
+    newImg.src = URL.createObjectURL(resultBlob)
+    previewItem.replaceChild(newImg, shimmer)
+    
     currentAction = action
     showToast(action === 'encrypt' ? '混淆完成' : '解混淆完成', 'success')
     status.textContent = action === 'encrypt' ? '混淆完成' : '解混淆完成'
   } catch (e) {
+    // On error, restore original image
+    var origImg = document.createElement('img')
+    origImg.src = originalImgSrc
+    previewItem.replaceChild(origImg, shimmer)
+    
     var classified = classifyError(e)
     showToast(classified.message, 'error')
     status.textContent = '错误: ' + classified.message
