@@ -82,7 +82,7 @@ h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; margin: 0; tran
 #status { margin-top: .5rem; font-size: .8rem; color: var(--muted-fg); letter-spacing: 0.02em; font-weight: 500; transition: opacity 0.3s; }
 #status-marquee { margin-top: 2px; font-size: .6rem; color: var(--muted-fg); letter-spacing: 0.08em; text-transform: uppercase; overflow: hidden; }
 #status-marquee span { display: inline-block; animation: slideUp 0.3s ease; }
-.spinner { display: none; width: 18px; height: 18px; border: 2px solid var(--muted); border-top-color: var(--accent); border-radius: 50%; animation: spin .6s linear infinite; margin: .4rem auto; }
+.spinner { display: none; width: 18px; height: 18px; border: 2px solid var(--muted); border-top-color: var(--accent); border-radius: 50%; animation: spin .6s linear infinite; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; }
 .status-dots::after { animation: dots 1.5s steps(3) infinite; content: ''; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes letterPulse { 0%,100% { letter-spacing: -0.02em; } 50% { letter-spacing: 0.03em; } }
@@ -123,10 +123,9 @@ function html(): string {
   <div id="progress-bar"><div class="bar-fill" id="bar-fill"></div></div>
   <span id="progress-label"></span>
 </div>
-<div class="spinner" id="spinner"></div>
 <div id="main-area">
   <div id="thumb-sidebar"></div>
-  <div id="preview-scroll"><div class="drop-placeholder"><div class="drop-icon">+</div>拖拽图片或 ZIP 到此处</div></div>
+  <div id="preview-scroll"><div class="spinner" id="spinner"></div><div class="drop-placeholder"><div class="drop-icon">+</div>拖拽图片或 ZIP 到此处</div></div>
 </div>
 <p id="status">请选择一张图片</p>
 <div id="status-marquee"></div>
