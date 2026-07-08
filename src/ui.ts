@@ -140,6 +140,7 @@ let selectedIndex = -1
 let sessionId = null
 let zipId = null
 let originalSrc = ''
+let originalFile = null
 let originalFileName = ''
 let currentAction = ''
 let observer = null
@@ -517,6 +518,7 @@ ipt.onchange = function () {
     if (header) header.classList.add('previewing')
     var url = URL.createObjectURL(ipt.files[0])
     setSrc(url)
+    originalFile = ipt.files[0]
     originalSrc = url
     originalFileName = ipt.files[0].name
     currentAction = ''
@@ -539,6 +541,7 @@ function loadBatchFiles(files) {
     })
   }
   URL.revokeObjectURL(originalSrc)
+  originalFile = null
   batchMode = true
   batchItems = []
   selectedIndex = 0
@@ -708,7 +711,13 @@ decBtn.onclick = function () {
 reBtn.onclick = function () {
   if (batchMode) {
     if (batchItems.length > 0) scrollToImage(0)
-  } else if (originalSrc) {
+  } else if (originalFile) {
+    // Revoke old blob URL
+    if (originalSrc && originalSrc.startsWith('blob:')) {
+      URL.revokeObjectURL(originalSrc)
+    }
+    // Create new blob URL from File object
+    originalSrc = URL.createObjectURL(originalFile)
     var header = document.querySelector('.header')
     if (header) header.classList.add('previewing')
     setSrc(originalSrc)
