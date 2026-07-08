@@ -51,7 +51,7 @@ h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; margin: 0; tran
 #preview-scroll { position: relative; flex: 1; overflow-y: auto; display: flex; flex-direction: column; min-height: 50vh; max-height: 70vh; border: 2px solid var(--border); transition: border-color .2s; scroll-snap-type: y mandatory; }
 #preview-scroll.drag-over { border-color: var(--accent); }
 .preview-item { position: relative; flex: 0 0 100%; scroll-snap-align: start; display: flex; align-items: center; justify-content: center; min-height: 100%; }
-.preview-item img { max-width: min(92vw, 800px); max-height: min(60vh, 500px); display: block; transition: opacity .2s; }
+.preview-item img { max-width: min(92vw, 800px); max-height: min(60vh, 500px); display: block; margin: 0 auto; transition: opacity .2s; }
 .preview-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.2rem; pointer-events: none; }
 .preview-error { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: var(--error); color: #fff; padding: 4px 12px; font-size: .8rem; }
 .preview-counter { position: absolute; bottom: 8px; right: 8px; background: rgba(74, 111, 165, 0.9); backdrop-filter: blur(4px); color: #fff; font-size: 1rem; font-weight: 700; padding: 4px 12px; pointer-events: none; }
