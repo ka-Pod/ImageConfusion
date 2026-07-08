@@ -89,6 +89,7 @@ describe('Batch API', () => {
     const body = await res.json()
     expect(body.zipId).toBeDefined()
     expect(body.items.length).toBe(2)
+    expect(body.items[0].id).toBeDefined()
     expect(body.items[0].processedName).toBe('encrypt_a.png')
   })
 

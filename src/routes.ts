@@ -96,7 +96,7 @@ api.post('/batch/encrypt', async (c) => {
 
     return c.json({
       zipId: sessionId,
-      items: items.map(i => ({ originalName: i.originalName, processedName: i.processedName, ...(i.error ? { error: i.error } : {}) })),
+      items: items.map(i => ({ id: i.id, originalName: i.originalName, processedName: i.processedName, ...(i.error ? { error: i.error } : {}) })),
     })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
