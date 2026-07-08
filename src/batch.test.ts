@@ -166,6 +166,20 @@ describe('extractZipBuffer', () => {
     expect(extracted[0].name).toBe(names[0])
     expect(extracted[1].name).toBe(names[1])
   })
+
+  test('extractZipBuffer handles subdirectory paths', async () => {
+    const { extractZipBuffer } = await import('./batch')
+    const files = [
+      { name: 'subfolder/image1.png', buffer: Buffer.from([1, 2, 3]) },
+      { name: 'deep/nested/path/image2.jpg', buffer: Buffer.from([4, 5, 6]) },
+      { name: 'image3.png', buffer: Buffer.from([7, 8, 9]) },
+    ]
+    const zipBuffer = await createZipFile(files)
+    const extracted = await extractZipBuffer(zipBuffer)
+    expect(extracted.length).toBe(3)
+    const names = extracted.map(f => f.name).sort()
+    expect(names).toEqual(['image1.png', 'image2.jpg', 'image3.png'])
+  })
 })
 
 describe('processImageBuffer', () => {

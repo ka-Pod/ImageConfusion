@@ -100,7 +100,8 @@ export async function extractZipBuffer(zipBuffer: Buffer): Promise<{ name: strin
       for await (const chunk of file.stream()) {
         chunks.push(chunk)
       }
-      result.push({ name: file.path, buffer: Buffer.concat(chunks) })
+      const fileName = file.path.split('/').pop() || file.path
+      result.push({ name: fileName, buffer: Buffer.concat(chunks) })
     }
   } catch (err) {
     throw new Error(`ZIP 解压失败: ${err instanceof Error ? err.message : String(err)}`)
