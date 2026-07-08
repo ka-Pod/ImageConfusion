@@ -66,6 +66,11 @@ h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; margin: 0; tran
 .toast-success { border-left-color: var(--success); }
 .toast-error { border-left-color: var(--error); }
 .toast-info { border-left-color: var(--border); }
+.toast-network { border-left-color: #e67e22; }
+.toast-format { border-left-color: #9b59b6; }
+.toast-expired { border-left-color: #3498db; }
+.toast-size { border-left-color: #e74c3c; }
+.toast-server { border-left-color: #c0392b; }
 .toast-out { animation: toastOut .2s ease-in forwards; }
 @keyframes toastIn { from { opacity: 0; transform: translateX(60px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes toastOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(60px); } }
@@ -224,7 +229,43 @@ function showToast(msg, type) {
   setTimeout(function () {
     el.classList.add('toast-out')
     setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el) }, 260)
-  }, 3000)
+  }, type === 'error' ? 5000 : 3000)
+}
+
+/* === Error Classification === */
+function classifyError(error) {
+  if (!error) return { type: 'unknown', message: '未知错误' }
+  
+  var msg = error.message || String(error)
+  
+  // Network errors
+  if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('network')) {
+    return { type: 'network', message: '网络连接失败，请检查网络后重试' }
+  }
+  
+  // HTTP status code errors
+  if (msg.includes('HTTP 413')) {
+    return { type: 'size', message: '文件过大，请压缩后重试' }
+  }
+  if (msg.includes('HTTP 415') || msg.includes('HTTP 400')) {
+    return { type: 'format', message: '文件格式不支持，请上传图片文件' }
+  }
+  if (msg.includes('HTTP 404')) {
+    return { type: 'expired', message: '文件已过期，请重新上传' }
+  }
+  if (msg.includes('HTTP 5')) {
+    return { type: 'server', message: '服务器错误，请稍后重试' }
+  }
+  
+  // Business logic errors
+  if (msg.includes('ZIP') || msg.includes('zip')) {
+    return { type: 'format', message: 'ZIP 文件处理失败: ' + msg }
+  }
+  if (msg.includes('图片') || msg.includes('image')) {
+    return { type: 'format', message: msg }
+  }
+  
+  return { type: 'unknown', message: msg }
 }
 
 /* === Progress bar === */
@@ -572,8 +613,9 @@ zipIpt.onchange = async function () {
     status.textContent = '解混淆完成'
     showToast('解混淆完成', 'success')
   } catch (e) {
-    status.textContent = '错误: ' + e.message
-    showToast(e.message, 'error')
+    var classified = classifyError(e)
+    status.textContent = '错误: ' + classified.message
+    showToast(classified.message, 'error')
     batchItems.forEach(function (item) {
       if (item.status === 'processing') item.status = 'error'
     })
@@ -641,8 +683,9 @@ async function processBatchAction(action) {
       status.textContent = '解混淆完成'
     }
   } catch (e) {
-    status.textContent = '错误: ' + e.message
-    showToast(e.message, 'error')
+    var classified = classifyError(e)
+    status.textContent = '错误: ' + classified.message
+    showToast(classified.message, 'error')
     batchItems.forEach(function (item) {
       if (item.status === 'processing') item.status = 'error'
     })
@@ -723,7 +766,11 @@ batchDlBtn.onclick = async function () {
       showToast('打包下载完成', 'success')
       status.textContent = '打包下载完成'
     }
-  } catch (e) { showToast(e.message, 'error'); status.textContent = '错误: ' + e.message }
+  } catch (e) {
+    var classified = classifyError(e)
+    showToast(classified.message, 'error')
+    status.textContent = '错误: ' + classified.message
+  }
 }
 
 /* === Single image processing === */
@@ -745,7 +792,11 @@ async function processImage(action) {
     currentAction = action
     showToast(action === 'encrypt' ? '混淆完成' : '解混淆完成', 'success')
     status.textContent = action === 'encrypt' ? '混淆完成' : '解混淆完成'
-  } catch (e) { showToast(e.message, 'error'); status.textContent = '错误: ' + e.message }
+  } catch (e) {
+    var classified = classifyError(e)
+    showToast(classified.message, 'error')
+    status.textContent = '错误: ' + classified.message
+  }
   finally { spinner.style.display = 'none'; encBtn.disabled = false; decBtn.disabled = false }
 }
 
