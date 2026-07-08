@@ -2,6 +2,19 @@
 
 All notable changes to ImageConfusion will be documented in this file.
 
+## [v1.4.5] - 2026-07-08
+
+### Fixed
+
+- **ZIP file path handling**: Clean directory prefixes from extracted ZIP file paths to prevent filename issues
+- **Batch encrypt response**: Add missing `id` field to `/api/batch/encrypt` response for consistency
+- **ZIP upload cleanup**: Properly cleanup session when `/api/batch/decrypt-zip` fails
+- **Memory leak**: Revoke blob URLs after batch download to prevent memory accumulation
+
+### Added
+
+- **Classified error messages**: Error toasts now show category-specific messages (network, format, expired, size, server) with appropriate colors and longer display time for errors
+
 ## [v1.4.2] - 2026-07-07
 
 ### Fixed
