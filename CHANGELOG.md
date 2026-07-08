@@ -8,23 +8,13 @@ All notable changes to ImageConfusion will be documented in this file.
 
 - **Image not centered**: Add margin: 0 auto to horizontally center image in preview area
 - **Layout jump during encryption/decryption**: Remove scroll-snap-type to prevent DOM change jumps
-
-## [v1.4.6] - 2026-07-08
-
-### Fixed
-
 - **Layout shift during encryption/decryption**: Spinner now uses absolute positioning, processImage uses shimmer placeholder to maintain container height
 - **Restore button not working**: Store original File object instead of blob URL to prevent URL revocation issues
-- **Code quality**: Remove `any` types from tests, use async/await instead of .then(), fix potential memory leak in processImage
-
-## [v1.4.5] - 2026-07-08
-
-### Fixed
-
 - **ZIP file path handling**: Clean directory prefixes from extracted ZIP file paths to prevent filename issues
 - **Batch encrypt response**: Add missing `id` field to `/api/batch/encrypt` response for consistency
 - **ZIP upload cleanup**: Properly cleanup session when `/api/batch/decrypt-zip` fails
 - **Memory leak**: Revoke blob URLs after batch download to prevent memory accumulation
+- **Code quality**: Remove `any` types from tests, use async/await instead of .then(), fix potential memory leak in processImage
 
 ### Added
 
