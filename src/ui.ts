@@ -801,7 +801,8 @@ async function processImage(action) {
   encBtn.disabled = true; decBtn.disabled = true
 
   try {
-    var blob = await fetch(originalImgSrc).then(function (r) { return r.blob() })
+    var response = await fetch(originalImgSrc)
+    var blob = await response.blob()
     var form = new FormData()
     form.append('image', blob, 'image.jpeg')
     var res = await fetch('/api/' + action, { method: 'POST', body: form })

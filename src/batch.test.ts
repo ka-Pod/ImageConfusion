@@ -22,9 +22,14 @@ describe('batch module exports', () => {
 
 describe('session management', () => {
   let sid: string
-  let createSession: any, sessionDir: any, ensureSessionDir: any
-  let saveProcessedImage: any, getProcessedImage: any
-  let saveManifest: any, readManifest: any, cleanupSession: any
+  let createSession: () => string
+  let sessionDir: (sessionId: string) => string
+  let ensureSessionDir: (sessionId: string) => Promise<string>
+  let saveProcessedImage: (sessionId: string, id: string, buffer: Buffer) => Promise<void>
+  let getProcessedImage: (sessionId: string, id: string) => Promise<Buffer | null>
+  let saveManifest: (sessionId: string, entries: { id: string; originalName: string; processedName: string; error?: string }[]) => Promise<void>
+  let readManifest: (sessionId: string) => Promise<{ id: string; originalName: string; processedName: string; error?: string }[] | null>
+  let cleanupSession: (sessionId: string) => Promise<void>
 
   beforeEach(async () => {
     const batch = await import('./batch')
@@ -107,7 +112,7 @@ describe('ZIP creation', () => {
 })
 
 describe('extractZipBuffer', () => {
-  let createZipFile: any
+  let createZipFile: (files: { name: string; buffer: Buffer }[]) => Promise<Buffer>
 
   beforeAll(async () => {
     const batch = await import('./batch')
