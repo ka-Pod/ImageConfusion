@@ -132,6 +132,7 @@ api.post('/batch/decrypt', async (c) => {
 })
 
 api.post('/batch/decrypt-zip', async (c) => {
+  let sessionId: string | null = null
   try {
     const formData = await c.req.formData()
     const zipFile = formData.get('zip')
@@ -148,12 +149,13 @@ api.post('/batch/decrypt-zip', async (c) => {
     }
 
     const files = extracted.map(f => ({ name: f.name, buffer: f.buffer }))
-    const { sessionId, items } = await processBatch(files, 'decrypt')
-    await log('INFO', `batch decrypt-zip success: ${items.length} files from ZIP`)
+    const result = await processBatch(files, 'decrypt')
+    sessionId = result.sessionId
+    await log('INFO', `batch decrypt-zip success: ${result.items.length} files from ZIP`)
 
     return c.json({
-      sessionId,
-      items: items.map(i => ({
+      sessionId: result.sessionId,
+      items: result.items.map(i => ({
         id: i.id,
         originalName: i.originalName,
         processedName: i.processedName,
@@ -163,6 +165,9 @@ api.post('/batch/decrypt-zip', async (c) => {
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     await log('ERROR', `batch decrypt-zip failed: ${msg}`)
+    if (sessionId) {
+      await cleanupSession(sessionId).catch(() => {})
+    }
     return c.json({ error: 'ZIP 文件处理失败: ' + msg }, 400)
   }
 })
