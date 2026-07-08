@@ -699,8 +699,11 @@ batchDlBtn.onclick = async function () {
       if (!res.ok) throw new Error('ZIP 下载失败')
       var blob = await res.blob()
       var a = document.createElement('a')
-      a.href = URL.createObjectURL(blob); a.download = 'encrypt_results.zip'
+      var blobUrl = URL.createObjectURL(blob)
+      a.href = blobUrl
+      a.download = 'encrypt_results.zip'
       document.body.appendChild(a); a.click(); document.body.removeChild(a)
+      URL.revokeObjectURL(blobUrl)
       showToast('打包下载完成', 'success')
       status.textContent = '打包下载完成'
     } else if (sessionId) {
@@ -712,8 +715,11 @@ batchDlBtn.onclick = async function () {
       if (!res.ok) throw new Error('HTTP ' + res.status)
       var blob = await res.blob()
       var a = document.createElement('a')
-      a.href = URL.createObjectURL(blob); a.download = 'decrypt_results.zip'
+      var blobUrl = URL.createObjectURL(blob)
+      a.href = blobUrl
+      a.download = 'decrypt_results.zip'
       document.body.appendChild(a); a.click(); document.body.removeChild(a)
+      URL.revokeObjectURL(blobUrl)
       showToast('打包下载完成', 'success')
       status.textContent = '打包下载完成'
     }
