@@ -69,20 +69,33 @@ api.post('/create', async (c: Context) => {
 
 api.post('/save-from-batch', async (c: Context) => {
   try {
-    const body = await c.req.json()
-    const { name, author, source } = body
+    const contentType = c.req.header('content-type') || ''
+    let name = ''
+    let author = ''
+    let source = ''
+    let zipBuffer: Buffer | null = null
 
-    const formData = await c.req.formData()
-    const zipFile = formData.get('zip')
-
-    let zipBuffer: Buffer
-    if (zipFile instanceof File) {
-      zipBuffer = Buffer.from(await zipFile.arrayBuffer())
-    } else if (body.zipBuffer) {
-      zipBuffer = Buffer.from(body.zipBuffer, 'base64')
+    if (contentType.includes('json')) {
+      const body = await c.req.json() as Record<string, unknown>
+      name = (body.name as string) || ''
+      author = (body.author as string) || ''
+      source = (body.source as string) || ''
+      if (body.zipBuffer) {
+        zipBuffer = Buffer.from(body.zipBuffer as string, 'base64')
+      }
     } else {
-      return c.json({ error: '缺少 ZIP 数据' }, 400)
+      const formData = await c.req.formData()
+      name = (formData.get('name') as string) || ''
+      author = (formData.get('author') as string) || ''
+      source = (formData.get('source') as string) || ''
+      const zipFile = formData.get('zip')
+      if (zipFile instanceof File) {
+        zipBuffer = Buffer.from(await zipFile.arrayBuffer())
+      }
     }
+
+    if (!name) return c.json({ error: '请输入漫画名称' }, 400)
+    if (!zipBuffer) return c.json({ error: '缺少 ZIP 数据' }, 400)
 
     const extracted = await extractZipBuffer(zipBuffer)
     const images = extracted.filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f.name))
@@ -104,6 +117,16 @@ api.post('/save-from-batch', async (c: Context) => {
     const msg = err instanceof Error ? err.message : String(err)
     await log('ERROR', `gallery save-from-batch failed: ${msg}`)
     return c.json({ error: msg }, 500)
+  }
+})
+
+api.post('/cleanup', async (c: Context) => {
+  try {
+    const { sessionId } = await c.req.json() as { sessionId: string }
+    if (sessionId) await storage.cleanupDecryptSession(sessionId)
+    return c.json({ ok: true })
+  } catch {
+    return c.json({ ok: false })
   }
 })
 
@@ -137,16 +160,6 @@ api.get('/decrypt/:sessionId/page/:n', async (c: Context) => {
   if (!existsSync(pagePath)) return c.json({ error: '页面不存在' }, 404)
   const buffer = await readFile(pagePath)
   return c.body(new Uint8Array(buffer), 200, { 'Content-Type': 'image/jpeg' })
-})
-
-api.post('/cleanup', async (c: Context) => {
-  try {
-    const { sessionId } = await c.req.json()
-    if (sessionId) await storage.cleanupDecryptSession(sessionId)
-    return c.json({ ok: true })
-  } catch {
-    return c.json({ ok: false })
-  }
 })
 
 export { api }

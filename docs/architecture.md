@@ -23,19 +23,19 @@
 
 ## 核心模块
 
-### 后端模块 (src/server/)
+### 后端模块
 
 | 模块 | 路径 | 职责 |
 |------|------|------|
-| 服务入口 | `src/server/index.ts` | Bun 服务启动，导出 app.fetch |
-| 应用根 | `src/server/app.ts` | Hono 应用配置，路由挂载 |
-| 混淆 API | `src/server/routes.ts` | /api/encrypt, /api/decrypt, /api/batch/* |
+| 服务入口 | `src/index.ts` | Bun 服务启动，导出 app.fetch |
+| 应用根 | `src/app.ts` | Hono 应用配置，路由挂载 |
+| 混淆 API | `src/routes.ts` | /api/encrypt, /api/decrypt, /api/batch/* |
 | 画廊 API | `src/server/gallery-routes.ts` | /api/gallery/* (create/list/decrypt/cleanup) |
-| Gilbert 曲线 | `src/server/gilbert.ts` | 任意尺寸矩形空间填充曲线生成 |
-| 混淆引擎 | `src/server/confuse.ts` | 像素级混淆/解混淆（Uint8Array 操作） |
-| 批处理引擎 | `src/server/batch.ts` | 临时存储管理、ZIP 打包、ZIP 解压、TTL 清理 |
+| Gilbert 曲线 | `src/gilbert.ts` | 任意尺寸矩形空间填充曲线生成 |
+| 混淆引擎 | `src/confuse.ts` | 像素级混淆/解混淆（Uint8Array 操作） |
+| 批处理引擎 | `src/batch.ts` | 临时存储管理、ZIP 打包、ZIP 解压、TTL 清理 |
 | 画廊存储 | `src/server/gallery-storage.ts` | storage/ 目录管理、漫画 ZIP 读写、封面解密 |
-| 日志模块 | `src/server/logger.ts` | 日志写入（logs/ 目录） |
+| 日志模块 | `src/logger.ts` | 日志写入（logs/ 目录） |
 
 ### 前端模块 (src/client/)
 

@@ -27,15 +27,16 @@ pnpm dev:client   # 仅启动前端 http://localhost:5173
 ```bash
 pnpm build                        # Vite 构建前端到 public/
 pnpm install --ignore-scripts --production
-bun run src/server/index.ts       # Hono 服务 public/ 静态文件
+bun run src/index.ts       # Hono 服务 + public/ 静态文件
 ```
 
 ## 目录说明
 
 | 目录 | 说明 |
 |------|------|
-| `src/server/` | 后端源码（Hono API） |
-| `src/client/` | 前端源码（Vue 3） |
+| `src/` | 后端源码（入口、路由、混淆算法、批处理） |
+| `src/server/` | 后端画廊模块（存储、API） |
+| `src/client/` | 前端源码（Vue 3 SPA） |
 | `storage/` | 漫画持久化存储（自动创建） |
 | `public/` | 生产构建产物 |
 | `logs/` | 日志文件 |

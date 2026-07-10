@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import type { ComicMeta } from '../../types'
+import type { ComicMeta } from '../types'
 import { useToast } from '../composables/useToast'
 
 const route = useRoute()
@@ -33,8 +33,8 @@ async function handleDecrypt() {
   try {
     const res = await fetch(`/api/gallery/${comicId}/decrypt`, { method: 'POST' })
     if (!res.ok) throw new Error('解密失败')
-    const data = await res.json()
-    router.push(`/gallery/${comicId}/reader?session=${data.sessionId}`)
+    const data = await res.json() as { sessionId: string; totalPages: number }
+    router.push(`/gallery/${comicId}/reader?session=${data.sessionId}&total=${data.totalPages}`)
   } catch (err) {
     showToast(err instanceof Error ? err.message : '解密失败', 'error')
   } finally {

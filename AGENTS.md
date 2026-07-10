@@ -13,8 +13,8 @@
 | HTTP 框架 | Hono |
 | 图像处理 | sharp |
 | 包管理器 | pnpm |
-| 项目类型 | 服务端图片混淆工具（Bun/Hono 后端处理像素） |
-| 核心约束 | 逐像素混淆，无损/有损可选输出；无前端框架依赖 |
+| 项目类型 | 服务端图片混淆工具 + Vue 3 前端 SPA |
+| 核心约束 | 逐像素混淆，无损/有损可选输出；Vue 3 前端 SPA |
 
 ## 2. 环境搭建与开发流程
 
@@ -22,15 +22,16 @@
 
 ```bash
 pnpm install --ignore-scripts
-pnpm dev:server   # 后端 http://localhost:3000
-pnpm dev:client   # 前端 http://localhost:5173
+pnpm dev          # 同时启动后端 http://localhost:3000 和前端 http://localhost:5173
+pnpm dev:server   # 仅后端 http://localhost:3000
+pnpm dev:client   # 仅前端 http://localhost:5173
 ```
 
 ### 生产环境
 
 ```bash
 pnpm install --ignore-scripts --production
-bun run src/server/index.ts
+bun run src/index.ts
 ```
 
 ### 构建检查
@@ -90,6 +91,28 @@ bun test
 3. **同一图片无法正确还原**
    - 检查混淆/解混淆使用同一 offset 和曲线算法
    - 确认图片经过解混淆后是否存储为有损格式导致数据丢失
+
+## 8. 已知问题 / Bug Tracker
+
+### 已修复
+
+| Bug | 文件 | 描述 | 修复状态 |
+|-----|------|------|----------|
+| 后端入口路径错误 | `package.json` | `dev:server` 指向不存在的 `src/server/index.ts` | ✅ 已修复 |
+| docs 后端路径错误 | `docs/architecture.md`, `docs/setup.md` | 文档中后端模块路径使用 `src/server/` 前缀，但实际在 `src/` | ✅ 已修复 |
+| save-from-batch 双读 body | `gallery-routes.ts:72-75` | `c.req.json()` 和 `c.req.formData()` 同时调用导致 body 被消费两次 | ✅ 已修复 |
+| ReaderPage totalPages 未设置 | `ReaderPage.vue` | `totalPages` 始终为 0，解密返回值未传递到阅读器 | ✅ 已修复 |
+| cleanup 路由被 /:id 吞掉 | `gallery-routes.ts` | `/:id` 在 `/cleanup` 之前注册，"cleanup" 被当 id 匹配 | ✅ 已修复 |
+| ComicDetailPage 类型导入路径错误 | `ComicDetailPage.vue:4` | `../../types` 应为 `../types` | ✅ 已修复 |
+
+### 待处理
+
+| Bug | 文件 | 描述 | 影响 |
+|-----|------|------|------|
+| gallery-storage 无独立测试覆盖 | `gallery-storage.ts` | 画廊存储模块（save/list/decrypt/cleanup）无单元测试 | 中 |
+| gallery-routes 无测试覆盖 | `gallery-routes.ts` | 画廊 API 端点无端到端测试 | 中 |
+| ConfusePage.vue 无测试覆盖 | `ConfusePage.vue` | 主混淆页面无组件测试 | 中 |
+| gallery-storage coverBase64 生成时内存低效 | `gallery-storage.ts:59-64` | 封面解密先 raw 再转 Buffer 再 jpeg，可优化为直接 sharp pipe | 低 |
 
 ## 6. 第一性原理
 
