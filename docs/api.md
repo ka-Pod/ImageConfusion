@@ -136,6 +136,126 @@
 
 ---
 
+---
+
+## 画廊 API
+
+## POST /api/gallery/create
+
+上传图片创建漫画，服务端混淆后打包为漫画 ZIP 存入 storage/。
+
+**请求：** `multipart/form-data`
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| image[] | file[] | 原始图片（单张或多张） |
+| name | string | 漫画名称（必填） |
+| author | string | 作者（可选） |
+| source | string | 图源（可选） |
+
+**响应：** `200 application/json`
+```json
+{ "id": "uuid", "name": "海贼王 第1话", "totalPages": 32 }
+```
+
+---
+
+## POST /api/gallery/save-from-batch
+
+将批量加密结果保存为漫画（从 /confuse 页面触发）。
+
+**请求：** `application/json`
+```json
+{ "zipBuffer": "base64-encoded-zip", "name": "...", "author": "...", "source": "..." }
+```
+
+**响应：** `200 application/json`
+```json
+{ "id": "uuid", "name": "..." }
+```
+
+---
+
+## GET /api/gallery/list
+
+返回 storage/ 中所有漫画列表。
+
+**响应：** `200 application/json`
+```json
+[
+  {
+    "id": "uuid",
+    "name": "海贼王 第1话",
+    "author": "尾田荣一郎",
+    "source": "腾讯动漫",
+    "createdAt": "2026-07-10T12:00:00Z",
+    "coverIndex": 0,
+    "totalPages": 32,
+    "coverBase64": "/9j/4AAQ..."  // 已解密的封面 JPEG base64
+  }
+]
+```
+
+---
+
+## GET /api/gallery/:id
+
+返回单部漫画详情。
+
+**响应：** `200 application/json`
+```json
+{
+  "id": "uuid",
+  "name": "海贼王 第1话",
+  "author": "尾田荣一郎",
+  "source": "腾讯动漫",
+  "createdAt": "2026-07-10T12:00:00Z",
+  "coverIndex": 0,
+  "totalPages": 32
+}
+```
+
+---
+
+## POST /api/gallery/:id/decrypt
+
+解密指定漫画的全部页面。
+
+**响应：** `200 application/json`
+```json
+{ "sessionId": "session-uuid", "totalPages": 32 }
+```
+
+解密后的图片存入 `tmp/gallery-{sessionId}/` 目录。
+
+---
+
+## GET /api/gallery/decrypt/:sessionId/page/:n
+
+获取指定页的解密图片。
+
+| 参数 | 说明 |
+|------|------|
+| sessionId | 解密会话 ID |
+| n | 页码（从 0 开始） |
+
+**响应：** `200 image/jpeg`
+
+---
+
+## POST /api/gallery/cleanup
+
+清理解密会话临时文件。
+
+**请求：** `application/json`
+```json
+{ "sessionId": "session-uuid" }
+```
+
+**响应：** `200 { "ok": true }`
+
+---
+
 ## POST /api/batch/cleanup
 
 通知服务端清理当前 session 的临时文件（用户重新选文件夹时前端自动调用）。

@@ -22,14 +22,15 @@
 
 ```bash
 pnpm install --ignore-scripts
-bun run --hot src/index.ts
+pnpm dev:server   # 后端 http://localhost:3000
+pnpm dev:client   # 前端 http://localhost:5173
 ```
 
 ### 生产环境
 
 ```bash
 pnpm install --ignore-scripts --production
-bun run src/index.ts
+bun run src/server/index.ts
 ```
 
 ### 构建检查

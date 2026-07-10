@@ -2,7 +2,11 @@
 
 ## 架构
 
-前端为**纯静态单页应用**，由 Hono 服务端在 `GET /` 时内联返回完整 HTML。无前端框架依赖，所有 CSS/JS 逻辑由 `src/ui.ts` 中的三个模板函数生成。
+前端为 **Vue 3 + Vite** 单页应用，使用 Composition API 和 Vue Router 实现页面路由。
+
+- 开发模式：Vite Dev Server (端口 5173) + Hono API 代理
+- 生产模式：Vite 构建输出到 `public/`，由 Hono 静态文件服务提供
+- 全局状态由 `ref()` / `reactive()` 管理，无状态管理库
 
 ## 页面结构
 

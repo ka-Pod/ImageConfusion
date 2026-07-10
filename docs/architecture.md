@@ -5,25 +5,49 @@
 ```
 用户浏览器                   Bun/Hono 服务端
     │                            │
+    │── Vite Dev Server ────────→│  /api/* 代理到 Hono
+    │   (开发模式 / 端口 5173)    │
+    │                            │
+    │── GET /confuse ───────────→│  Vue Router → ConfusePage
+    │── GET /gallery ───────────→│  Vue Router → GalleryPage
+    │                            │
     │── POST /api/encrypt ──────→│  sharp 解码 → Gilbert 混淆 → sharp 编码 JPEG
     │←───── 混淆后图片 ──────────│
     │                            │
     │── POST /api/decrypt ──────→│  sharp 解码 → Gilbert 解混淆 → sharp 编码 JPEG
     │←──── 还原后图片 ───────────│
+    │                            │
+    │── GET /api/gallery/list ──→│  扫描 storage/ → 读取 metadata → 返回漫画列表
+    │── POST /api/gallery/:id/decrypt → 读取 storage/ → 解谜全部页 → 存入 tmp/
 ```
 
 ## 核心模块
 
+### 后端模块 (src/server/)
+
 | 模块 | 路径 | 职责 |
-|---|---|---|
-| 服务入口 | `src/index.ts` | Bun 服务启动，导出 app.fetch |
-| 应用根 | `src/app.ts` | Hono 应用配置，路由挂载，`renderPage()` |
-| 路由处理 | `src/routes.ts` | API 端点实现（encrypt/decrypt/batch） |
-| Gilbert 曲线 | `src/gilbert.ts` | 任意尺寸矩形空间填充曲线生成 |
-| 混淆引擎 | `src/confuse.ts` | 像素级混淆/解混淆（Uint8Array 操作） |
-| 前端渲染 | `src/ui.ts` | `renderPage()` 生成完整 HTML/CSS/JS |
-| 批处理引擎 | `src/batch.ts` | 临时存储管理、ZIP 打包（archiver）、ZIP 解压（unzipper）、TTL 清理 |
-| 日志模块 | `src/logger.ts` | 日志写入（logs/ 目录，fallback /tmp） |
+|------|------|------|
+| 服务入口 | `src/server/index.ts` | Bun 服务启动，导出 app.fetch |
+| 应用根 | `src/server/app.ts` | Hono 应用配置，路由挂载 |
+| 混淆 API | `src/server/routes.ts` | /api/encrypt, /api/decrypt, /api/batch/* |
+| 画廊 API | `src/server/gallery-routes.ts` | /api/gallery/* (create/list/decrypt/cleanup) |
+| Gilbert 曲线 | `src/server/gilbert.ts` | 任意尺寸矩形空间填充曲线生成 |
+| 混淆引擎 | `src/server/confuse.ts` | 像素级混淆/解混淆（Uint8Array 操作） |
+| 批处理引擎 | `src/server/batch.ts` | 临时存储管理、ZIP 打包、ZIP 解压、TTL 清理 |
+| 画廊存储 | `src/server/gallery-storage.ts` | storage/ 目录管理、漫画 ZIP 读写、封面解密 |
+| 日志模块 | `src/server/logger.ts` | 日志写入（logs/ 目录） |
+
+### 前端模块 (src/client/)
+
+| 模块 | 路径 | 职责 |
+|------|------|------|
+| 应用入口 | `src/client/main.ts` | Vue 应用挂载 |
+| 路由配置 | `src/client/router.ts` | /confuse → /gallery → /gallery/:id/detail → reader |
+| 根组件 | `src/client/App.vue` | 导航栏 + 路由出口 |
+| 混淆页 | `src/client/pages/ConfusePage.vue` | 混淆工具（单图/批量） |
+| 画廊页 | `src/client/pages/GalleryPage.vue` | 漫画画廊展示 |
+| 详情页 | `src/client/pages/ComicDetailPage.vue` | 漫画详情 + 解密入口 |
+| 阅读器 | `src/client/pages/ReaderPage.vue` | 翻页阅读器 |
 
 ## 混淆算法
 
@@ -77,5 +101,16 @@
 | 元数据 | `manifest.json` 记录 id ↔ 原始文件名映射 |
 | 清理时机 | ① ZIP 下载后删除 ② 新批次清理旧 session ③ TTL 30 分钟 ④ 服务启动清场 |
 | 清理实现 | 定时器每 5 分钟扫描，删除过期文件 |
+
+### 画廊存储
+
+| 项目 | 详情 |
+|------|------|
+| 根目录 | `storage/` |
+| 组织结构 | `storage/<comic-id>/encrypted.zip` |
+| 漫画 ZIP 格式 | 内含 `metadata.json` + `page_NNN.jpg`（混淆后图片） |
+| metadata.json | `{ name, author, source, createdAt, coverIndex }` |
+| 生命周期 | 永久保存，直到用户手动删除 |
+| 解密临时文件 | `tmp/gallery-{sessionId}/page_NNN.jpg`，退出阅读时清理 |
 
 
