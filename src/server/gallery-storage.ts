@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import sharp from 'sharp'
 import { decryptPixels } from '../confuse'
-import { createZipFile, extractZipBuffer } from '../batch'
+import { extractZipBuffer } from '../batch'
 
 const STORAGE_DIR = join(process.cwd(), 'storage')
 
@@ -28,7 +28,7 @@ async function ensureStorageDir(): Promise<void> {
   }
 }
 
-export async function saveComic(zipBuffer: Buffer, meta: ComicMeta): Promise<string> {
+export async function saveComic(zipBuffer: Buffer, _meta: ComicMeta): Promise<string> {
   await ensureStorageDir()
   const id = randomUUID()
   const dir = join(STORAGE_DIR, id)

@@ -17,16 +17,10 @@ export function useConfuse() {
   )
 
   const hasItems = computed(() => batchItems.value.length > 0)
-  const allEncrypted = computed(() =>
-    batchItems.value.length > 0 && batchItems.value.every(i => i.status === 'encrypted')
-  )
-  const allDecrypted = computed(() =>
-    batchItems.value.length > 0 && batchItems.value.every(i => i.status === 'decrypted')
-  )
 
   function resetAll() {
     batchItems.value.forEach(i => {
-      if (i.processedBlob) URL.revokeObjectURL(i.processedBlob)
+      i.processedBlob = undefined
     })
     if (originalSrc.value.startsWith('blob:')) URL.revokeObjectURL(originalSrc.value)
     batchMode.value = false
@@ -75,7 +69,7 @@ export function useConfuse() {
     }
   }
 
-  async function processBatch(action: 'encrypt' | 'decrypt'): Promise<any> {
+  async function processBatch(action: 'encrypt' | 'decrypt') {
     const form = new FormData()
     batchItems.value.forEach(item => {
       form.append('image', item.file, item.file.name)
@@ -84,28 +78,30 @@ export function useConfuse() {
     const res = await fetch(`/api/batch/${action}`, { method: 'POST', body: form })
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
-    const data = await res.json()
+    const data = await res.json() as Record<string, unknown>
 
     if (action === 'encrypt') {
-      zipId.value = data.zipId
-      data.items.forEach((respItem: any, i: number) => {
+      zipId.value = data.zipId as string
+      const items = data.items as Array<Record<string, unknown>>
+      items.forEach((respItem, i) => {
         if (i < batchItems.value.length) {
-          batchItems.value[i].processedName = respItem.processedName
+          batchItems.value[i].processedName = respItem.processedName as string
           batchItems.value[i].status = respItem.error ? 'error' : 'encrypted'
-          batchItems.value[i].errorMsg = respItem.error
+          batchItems.value[i].errorMsg = respItem.error as string | undefined
         }
       })
     } else {
-      sessionId.value = data.sessionId
-      for (let di = 0; di < data.items.length; di++) {
-        const dItem = data.items[di]
+      sessionId.value = data.sessionId as string
+      const items = data.items as Array<Record<string, unknown>>
+      for (let di = 0; di < items.length; di++) {
+        const dItem = items[di]
         if (di < batchItems.value.length) {
-          batchItems.value[di].processedName = dItem.processedName
+          batchItems.value[di].processedName = dItem.processedName as string
           if (dItem.error) {
             batchItems.value[di].status = 'error'
-            batchItems.value[di].errorMsg = dItem.error
+            batchItems.value[di].errorMsg = dItem.error as string
           } else {
-            const imgRes = await fetch(`/api/batch/image/${dItem.id}?sessionId=${sessionId.value}`)
+            const imgRes = await fetch(`/api/batch/image/${dItem.id as string}?sessionId=${sessionId.value}`)
             if (imgRes.ok) {
               batchItems.value[di].processedBlob = await imgRes.blob()
               batchItems.value[di].status = 'decrypted'
@@ -127,7 +123,7 @@ export function useConfuse() {
   return {
     batchMode, batchItems, selectedIndex, sessionId, zipId,
     originalSrc, originalFile, originalFileName, currentAction,
-    selectedItem, hasItems, allEncrypted, allDecrypted,
+    selectedItem, hasItems,
     resetAll, loadSingleFile, loadBatchFiles,
     processSingle, processBatch, scrollToImage,
   }

@@ -1,7 +1,6 @@
 import { Hono, type Context } from 'hono'
 import { readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
-import sharp from 'sharp'
 import * as storage from './gallery-storage'
 import { processImageBuffer, createZipFile, extractZipBuffer } from '../batch'
 import { log } from '../logger'
@@ -93,7 +92,7 @@ api.post('/save-from-batch', async (c: Context) => {
     const repackFiles = [{ name: 'metadata.json', buffer: metaBuffer }]
     images.forEach((img, i) => {
       const idx = String(i + 1).padStart(3, '0')
-      repackFiles.push({ name: `page_${idx}.jpg`, buffer: img.buffer })
+      repackFiles.push({ name: `page_${idx}.jpg`, buffer: Buffer.from(img.buffer) })
     })
 
     const zipBuf = await createZipFile(repackFiles)
@@ -119,14 +118,14 @@ api.get('/list', async (c: Context) => {
 })
 
 api.get('/:id', async (c: Context) => {
-  const id = c.req.param('id')
+  const id = c.req.param('id') || ''
   const comic = await storage.getComic(id)
   if (!comic) return c.json({ error: '漫画不存在' }, 404)
   return c.json(comic)
 })
 
 api.post('/:id/decrypt', async (c: Context) => {
-  const id = c.req.param('id')
+  const id = c.req.param('id') || ''
   const result = await storage.decryptComic(id)
   if (!result) return c.json({ error: '漫画不存在或解密失败' }, 404)
   return c.json(result)
