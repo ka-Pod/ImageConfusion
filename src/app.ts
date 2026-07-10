@@ -1,6 +1,6 @@
 import { Hono, type Context } from 'hono'
 import { logger } from 'hono/logger'
-import { serveStatic } from 'hono/serve-static'
+import { cors } from 'hono/cors'
 import { api } from './routes'
 import { api as galleryApi } from './server/gallery-routes'
 import { renderPage } from './ui'
@@ -12,13 +12,11 @@ startCleanupTimer()
 const app = new Hono()
 
 app.use(logger())
+app.use('/api/*', cors())
 
 app.route('/api', api)
 app.route('/api/gallery', galleryApi)
 
-// Production: serve built Vue app
-app.use('/*', serveStatic({ root: './public' }))
-// Development: fallback to server-rendered page
 app.get('/', (c: Context) => c.html(renderPage()))
 
 app.notFound((c) => c.json({ error: 'Not Found' }, 404))
