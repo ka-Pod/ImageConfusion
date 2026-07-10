@@ -2,5 +2,6 @@ node_modules/
 logs/
 *.log
 tmp/
-
+storage/
+public/
 vercel.json
