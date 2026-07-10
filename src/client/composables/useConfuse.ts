@@ -18,6 +18,14 @@ export function useConfuse() {
 
   const hasItems = computed(() => batchItems.value.length > 0)
 
+  const allEncrypted = computed(() =>
+    batchItems.value.length > 0 && batchItems.value.every(i => i.status === 'encrypted')
+  )
+
+  const allDecrypted = computed(() =>
+    batchItems.value.length > 0 && batchItems.value.every(i => i.status === 'decrypted')
+  )
+
   function resetAll() {
     batchItems.value.forEach(i => {
       i.processedBlob = undefined
@@ -123,7 +131,7 @@ export function useConfuse() {
   return {
     batchMode, batchItems, selectedIndex, sessionId, zipId,
     originalSrc, originalFile, originalFileName, currentAction,
-    selectedItem, hasItems,
+    selectedItem, hasItems, allEncrypted, allDecrypted,
     resetAll, loadSingleFile, loadBatchFiles,
     processSingle, processBatch, scrollToImage,
   }

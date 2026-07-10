@@ -119,4 +119,54 @@ describe('useConfuse', () => {
     expect(state.sessionId.value).toBeNull()
     expect(state.zipId.value).toBeNull()
   })
+
+  test('allEncrypted is false when items are pending', () => {
+    const { useConfuse } = require('../composables/useConfuse') as typeof import('../composables/useConfuse')
+    const state = useConfuse()
+    state.loadBatchFiles([new File(['a'], 'a.jpg'), new File(['b'], 'b.jpg')])
+    expect(state.allEncrypted.value).toBe(false)
+  })
+
+  test('allEncrypted is true when all items encrypted', () => {
+    const { useConfuse } = require('../composables/useConfuse') as typeof import('../composables/useConfuse')
+    const state = useConfuse()
+    state.loadBatchFiles([new File(['a'], 'a.jpg')])
+    state.batchItems.value[0].status = 'encrypted'
+    expect(state.allEncrypted.value).toBe(true)
+  })
+
+  test('allEncrypted is false when only some encrypted', () => {
+    const { useConfuse } = require('../composables/useConfuse') as typeof import('../composables/useConfuse')
+    const state = useConfuse()
+    state.loadBatchFiles([new File(['a'], 'a.jpg'), new File(['b'], 'b.jpg')])
+    state.batchItems.value[0].status = 'encrypted'
+    expect(state.allEncrypted.value).toBe(false)
+  })
+
+  test('allDecrypted is false when items are pending', () => {
+    const { useConfuse } = require('../composables/useConfuse') as typeof import('../composables/useConfuse')
+    const state = useConfuse()
+    state.loadBatchFiles([new File(['a'], 'a.jpg')])
+    expect(state.allDecrypted.value).toBe(false)
+  })
+
+  test('allDecrypted is true when all items decrypted', () => {
+    const { useConfuse } = require('../composables/useConfuse') as typeof import('../composables/useConfuse')
+    const state = useConfuse()
+    state.loadBatchFiles([new File(['a'], 'a.jpg')])
+    state.batchItems.value[0].status = 'decrypted'
+    expect(state.allDecrypted.value).toBe(true)
+  })
+
+  test('allDecrypted is false when no items', () => {
+    const { useConfuse } = require('../composables/useConfuse') as typeof import('../composables/useConfuse')
+    const state = useConfuse()
+    expect(state.allDecrypted.value).toBe(false)
+  })
+
+  test('allEncrypted is false when no items', () => {
+    const { useConfuse } = require('../composables/useConfuse') as typeof import('../composables/useConfuse')
+    const state = useConfuse()
+    expect(state.allEncrypted.value).toBe(false)
+  })
 })
