@@ -86,7 +86,7 @@ export async function createZipFile(files: { name: string; buffer: Buffer }[]): 
 
 const IMAGE_EXTENSIONS = /\.(png|jpg|jpeg|webp)$/i
 
-export async function extractZipBuffer(zipBuffer: Buffer): Promise<{ name: string; buffer: Buffer }[]> {
+async function extractZipGeneric(zipBuffer: Buffer, filter: (name: string) => boolean): Promise<{ name: string; buffer: Buffer }[]> {
   const result: { name: string; buffer: Buffer }[] = []
 
   try {
@@ -94,13 +94,13 @@ export async function extractZipBuffer(zipBuffer: Buffer): Promise<{ name: strin
 
     for (const file of directory.files) {
       if (file.type === 'Directory') continue
-      if (!IMAGE_EXTENSIONS.test(file.path)) continue
+      const fileName = file.path.split('/').pop() || file.path
+      if (!filter(fileName)) continue
 
       const chunks: Buffer[] = []
       for await (const chunk of file.stream()) {
         chunks.push(chunk)
       }
-      const fileName = file.path.split('/').pop() || file.path
       result.push({ name: fileName, buffer: Buffer.concat(chunks) })
     }
   } catch (err) {
@@ -108,6 +108,14 @@ export async function extractZipBuffer(zipBuffer: Buffer): Promise<{ name: strin
   }
 
   return result
+}
+
+export async function extractZipBuffer(zipBuffer: Buffer): Promise<{ name: string; buffer: Buffer }[]> {
+  return extractZipGeneric(zipBuffer, (name) => IMAGE_EXTENSIONS.test(name))
+}
+
+export async function extractZipAll(zipBuffer: Buffer): Promise<{ name: string; buffer: Buffer }[]> {
+  return extractZipGeneric(zipBuffer, () => true)
 }
 
 export async function saveZipFile(sessionId: string, buffer: Buffer): Promise<string> {

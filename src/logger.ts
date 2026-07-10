@@ -1,5 +1,5 @@
 import { appendFile, mkdir } from 'node:fs/promises'
-import { existsSync } from 'node:fs'
+import { appendFileSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -62,11 +62,8 @@ export function logSync(level: LogLevel, message: string): void {
   console.log(line.trimEnd())
 
   try {
-    const dir = join(process.cwd(), 'logs')
-    if (!existsSync(dir)) {
-      return
-    }
+    appendFileSync(logFilePath(), line, 'utf-8')
   } catch {
-    // silently ignore
+    // silently ignore log write errors
   }
 }

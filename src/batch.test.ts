@@ -15,6 +15,7 @@ describe('batch module exports', () => {
     expect(typeof batch.processImageBuffer).toBe('function')
     expect(typeof batch.processBatch).toBe('function')
     expect(typeof batch.extractZipBuffer).toBe('function')
+    expect(typeof batch.extractZipAll).toBe('function')
     expect(typeof batch.startCleanupTimer).toBe('function')
     expect(typeof batch.stopCleanupTimer).toBe('function')
   })
@@ -150,6 +151,16 @@ describe('extractZipBuffer', () => {
     const zipBuffer = await createZipFile([])
     const extracted = await extractZipBuffer(zipBuffer)
     expect(extracted).toEqual([])
+  })
+
+  test('extractZipAll includes non-image files', async () => {
+    const { extractZipAll } = await import('./batch')
+    const names = ['metadata.json', 'page_001.jpg', 'page_002.png']
+    const zipBuffer = await createZipFile(names.map(n => ({ name: n, buffer: Buffer.from([1, 2, 3]) })))
+    const extracted = await extractZipAll(zipBuffer)
+    expect(extracted.length).toBe(3)
+    expect(extracted.map(f => f.name)).toContain('metadata.json')
+    expect(extracted.map(f => f.name)).toContain('page_001.jpg')
   })
 
   test('extracts files regardless of order', async () => {

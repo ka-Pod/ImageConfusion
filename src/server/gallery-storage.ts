@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import sharp from 'sharp'
 import { decryptPixels } from '../confuse'
-import { extractZipBuffer } from '../batch'
+import { extractZipAll } from '../batch'
 
 const STORAGE_DIR = join(process.cwd(), 'storage')
 
@@ -46,7 +46,7 @@ export async function listComics(): Promise<ComicEntry[]> {
     const zipPath = join(STORAGE_DIR, entry, 'encrypted.zip')
     if (!existsSync(zipPath)) continue
     try {
-      const files = await extractZipBuffer(await readFile(zipPath))
+      const files = await extractZipAll(await readFile(zipPath))
       const metaFile = files.find(f => f.name === 'metadata.json')
       if (!metaFile) continue
       const meta: ComicMeta = JSON.parse(metaFile.buffer.toString('utf-8'))
@@ -87,7 +87,7 @@ export async function getComic(id: string): Promise<ComicEntry | null> {
   const zipPath = join(STORAGE_DIR, id, 'encrypted.zip')
   if (!existsSync(zipPath)) return null
   try {
-    const files = await extractZipBuffer(await readFile(zipPath))
+    const files = await extractZipAll(await readFile(zipPath))
     const metaFile = files.find(f => f.name === 'metadata.json')
     if (!metaFile) return null
     const meta: ComicMeta = JSON.parse(metaFile.buffer.toString('utf-8'))
@@ -102,7 +102,7 @@ export async function decryptComic(id: string): Promise<{ sessionId: string; tot
   const zipPath = join(STORAGE_DIR, id, 'encrypted.zip')
   if (!existsSync(zipPath)) return null
 
-  const files = await extractZipBuffer(await readFile(zipPath))
+  const files = await extractZipAll(await readFile(zipPath))
   const imageFiles = files.filter(f => f.name.startsWith('page_') && /\.jpg$/i.test(f.name))
   const sessionId = randomUUID()
   const tmpDir = join(process.cwd(), 'tmp', `gallery-${sessionId}`)

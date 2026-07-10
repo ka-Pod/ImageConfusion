@@ -104,13 +104,13 @@ bun test
 | ReaderPage totalPages 未设置 | `ReaderPage.vue` | `totalPages` 始终为 0，解密返回值未传递到阅读器 | ✅ 已修复 |
 | cleanup 路由被 /:id 吞掉 | `gallery-routes.ts` | `/:id` 在 `/cleanup` 之前注册，"cleanup" 被当 id 匹配 | ✅ 已修复 |
 | ComicDetailPage 类型导入路径错误 | `ComicDetailPage.vue:4` | `../../types` 应为 `../types` | ✅ 已修复 |
+| logSync 缺少文件写入 | `logger.ts:60-72` | `logSync` 检查了 log 目录存在性但从未真正写入文件 | ✅ 已修复 |
+| metadata.json 被 extractZipBuffer 过滤 | `batch.ts:97`, `gallery-storage.ts` | `extractZipBuffer` 只返回图片文件，导致 `listComics`/`getComic` 永远读不到 metadata.json | ✅ 已修复 |
 
 ### 待处理
 
 | Bug | 文件 | 描述 | 影响 |
 |-----|------|------|------|
-| gallery-storage 无独立测试覆盖 | `gallery-storage.ts` | 画廊存储模块（save/list/decrypt/cleanup）无单元测试 | 中 |
-| gallery-routes 无测试覆盖 | `gallery-routes.ts` | 画廊 API 端点无端到端测试 | 中 |
 | ConfusePage.vue 无测试覆盖 | `ConfusePage.vue` | 主混淆页面无组件测试 | 中 |
 | gallery-storage coverBase64 生成时内存低效 | `gallery-storage.ts:59-64` | 封面解密先 raw 再转 Buffer 再 jpeg，可优化为直接 sharp pipe | 低 |
 
