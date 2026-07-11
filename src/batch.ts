@@ -139,7 +139,11 @@ export async function cleanupSession(sessionId: string): Promise<void> {
   }
 }
 
-export async function processImageBuffer(buffer: Buffer, action: 'encrypt' | 'decrypt'): Promise<Buffer> {
+export async function processImageBuffer(
+  buffer: Buffer,
+  action: 'encrypt' | 'decrypt',
+  format: 'jpeg' | 'png' = 'jpeg',
+): Promise<Buffer> {
   const metadata = await sharp(buffer).metadata()
   if (!metadata.width || !metadata.height) throw new Error('无法解析图片')
   const { width, height } = metadata
@@ -148,9 +152,10 @@ export async function processImageBuffer(buffer: Buffer, action: 'encrypt' | 'de
   const result = action === 'encrypt'
     ? encryptPixels({ data: new Uint8Array(raw), width, height, channels })
     : decryptPixels({ data: new Uint8Array(raw), width, height, channels })
-  return await sharp(Buffer.from(result), { raw: { width, height, channels } })
-    .jpeg({ quality: 95 })
-    .toBuffer()
+  const pipeline = sharp(Buffer.from(result), { raw: { width, height, channels } })
+  return format === 'png'
+    ? await pipeline.png().toBuffer()
+    : await pipeline.jpeg({ quality: 95 }).toBuffer()
 }
 
 export async function processBatch(files: { name: string; buffer: Buffer }[], action: 'encrypt' | 'decrypt'): Promise<ProcessBatchResult> {

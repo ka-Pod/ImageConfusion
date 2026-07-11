@@ -28,6 +28,10 @@ export function useConfuse() {
 
   function resetAll() {
     batchItems.value.forEach(i => {
+      if (i.fileUrl?.startsWith('blob:')) URL.revokeObjectURL(i.fileUrl!)
+      if (i.processedUrl?.startsWith('blob:')) URL.revokeObjectURL(i.processedUrl!)
+      i.fileUrl = undefined
+      i.processedUrl = undefined
       i.processedBlob = undefined
     })
     if (originalSrc.value.startsWith('blob:')) URL.revokeObjectURL(originalSrc.value)
@@ -58,6 +62,7 @@ export function useConfuse() {
       file: f,
       status: 'pending' as const,
       processedName: '',
+      fileUrl: f.size > 0 ? URL.createObjectURL(f) : undefined,
     }))
     selectedIndex.value = files.length > 0 ? 0 : -1
   }
@@ -111,7 +116,12 @@ export function useConfuse() {
           } else {
             const imgRes = await fetch(`/api/batch/image/${dItem.id as string}?sessionId=${sessionId.value}`)
             if (imgRes.ok) {
-              batchItems.value[di].processedBlob = await imgRes.blob()
+              const blob = await imgRes.blob()
+              if (batchItems.value[di].processedUrl?.startsWith('blob:')) {
+                URL.revokeObjectURL(batchItems.value[di].processedUrl!)
+              }
+              batchItems.value[di].processedBlob = blob
+              batchItems.value[di].processedUrl = URL.createObjectURL(blob)
               batchItems.value[di].status = 'decrypted'
             }
           }

@@ -5,6 +5,8 @@ export type BatchItem = {
   status: 'pending' | 'processing' | 'encrypted' | 'decrypted' | 'error'
   errorMsg?: string
   processedBlob?: Blob
+  fileUrl?: string
+  processedUrl?: string
 }
 
 export type ComicMeta = {

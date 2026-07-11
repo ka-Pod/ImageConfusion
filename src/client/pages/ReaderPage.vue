@@ -9,6 +9,7 @@ const route = useRoute()
 const router = useRouter()
 const comicId = route.params.id as string
 const sessionId = route.query.session as string
+const currentPage = ref(0)
 const totalPages = ref(parseInt((route.query.total as string) || '0', 10))
 const pageSrc = ref('')
 const loading = ref(true)

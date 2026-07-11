@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import type { ComicMeta } from '../../types'
+import type { ComicMeta } from '../types'
 import ComicCard from '../components/gallery/ComicCard.vue'
 import NewComicModal from '../components/gallery/NewComicModal.vue'
 import { useToast } from '../composables/useToast'

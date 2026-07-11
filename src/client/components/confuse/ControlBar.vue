@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref } from 'vue'
+
 const props = defineProps<{
   batchMode: boolean
   hasItems: boolean
@@ -11,9 +13,8 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'select-files'): void
-  (e: 'select-folder'): void
-  (e: 'select-zip'): void
+  (e: 'files-selected', files: File[]): void
+  (e: 'zip-selected', file: File): void
   (e: 'encrypt'): void
   (e: 'decrypt'): void
   (e: 'restore'): void
@@ -24,7 +25,6 @@ const emit = defineEmits<{
 const fileInput = ref<HTMLInputElement>()
 const dirInput = ref<HTMLInputElement>()
 const zipInput = ref<HTMLInputElement>()
-import { ref } from 'vue'
 
 function triggerFileInput() {
   fileInput.value?.click()
@@ -38,13 +38,27 @@ function triggerZipInput() {
   zipInput.value?.click()
 }
 
-function onFilesChanged(event: Event) {
+function onImageFilesChanged(event: Event) {
   const input = event.target as HTMLInputElement
   if (input.files && input.files.length > 0) {
-    if (input.files.length === 1) {
-      emit('select-files')
-      // The parent handles reading the files
-    }
+    emit('files-selected', Array.from(input.files))
+    input.value = ''
+  }
+}
+
+function onDirFilesChanged(event: Event) {
+  const input = event.target as HTMLInputElement
+  if (input.files && input.files.length > 0) {
+    emit('files-selected', Array.from(input.files))
+    input.value = ''
+  }
+}
+
+function onZipFileChanged(event: Event) {
+  const input = event.target as HTMLInputElement
+  if (input.files && input.files.length > 0) {
+    emit('zip-selected', input.files[0])
+    input.value = ''
   }
 }
 </script>
@@ -53,15 +67,15 @@ function onFilesChanged(event: Event) {
   <div class="controls-bar">
     <span class="btn btn-file" @click="triggerFileInput">
       选择图片
-      <input ref="fileInput" type="file" multiple accept="image/*" hidden @change="onFilesChanged" />
+      <input ref="fileInput" type="file" multiple accept="image/*" hidden @change="onImageFilesChanged" />
     </span>
     <span class="btn btn-file" @click="triggerDirInput">
       选择文件夹
-      <input ref="dirInput" type="file" webkitdirectory multiple accept="image/*" hidden @change="onFilesChanged" />
+      <input ref="dirInput" type="file" webkitdirectory multiple accept="image/*" hidden @change="onDirFilesChanged" />
     </span>
     <span class="btn btn-file" @click="triggerZipInput">
       上传ZIP
-      <input ref="zipInput" type="file" accept=".zip" hidden @change="onFilesChanged" />
+      <input ref="zipInput" type="file" accept=".zip" hidden @change="onZipFileChanged" />
     </span>
 
     <span class="btn-sep">│</span>

@@ -215,4 +215,43 @@ describe('processImageBuffer', () => {
     expect(result[0]).toBe(0xFF)
     expect(result[1]).toBe(0xD8)
   })
+
+  test('encrypt as PNG then decrypt returns identical pixel data', async () => {
+    const sharp = (await import('sharp')).default
+    const { processImageBuffer } = await import('./batch')
+    const pixels = new Uint8Array(4 * 16 * 16)
+    for (let i = 0; i < 256; i++) {
+      pixels[i * 4] = (i * 37) % 256
+      pixels[i * 4 + 1] = (i * 71) % 256
+      pixels[i * 4 + 2] = (i * 13) % 256
+      pixels[i * 4 + 3] = 255
+    }
+    const input = await sharp(Buffer.from(pixels), { raw: { width: 16, height: 16, channels: 4 } }).png().toBuffer()
+    const originalRaw = await sharp(input).ensureAlpha().raw().toBuffer()
+
+    const encrypted = await processImageBuffer(input, 'encrypt', 'png')
+    const decrypted = await processImageBuffer(encrypted, 'decrypt', 'png')
+    const decryptedRaw = await sharp(decrypted).ensureAlpha().raw().toBuffer()
+
+    expect(decryptedRaw).toEqual(originalRaw)
+  })
+
+  test('encrypt as JPEG then decrypt returns a valid JPEG (lossy but recognizable)', async () => {
+    const sharp = (await import('sharp')).default
+    const { processImageBuffer } = await import('./batch')
+    const pixels = new Uint8Array(4 * 16 * 16)
+    for (let i = 0; i < 256; i++) {
+      pixels[i * 4] = (i * 37) % 256
+      pixels[i * 4 + 1] = (i * 71) % 256
+      pixels[i * 4 + 2] = (i * 13) % 256
+      pixels[i * 4 + 3] = 255
+    }
+    const input = await sharp(Buffer.from(pixels), { raw: { width: 16, height: 16, channels: 4 } }).png().toBuffer()
+
+    const encrypted = await processImageBuffer(input, 'encrypt', 'jpeg')
+    const decrypted = await processImageBuffer(encrypted, 'decrypt', 'jpeg')
+
+    expect(decrypted[0]).toBe(0xFF)
+    expect(decrypted[1]).toBe(0xD8)
+  })
 })

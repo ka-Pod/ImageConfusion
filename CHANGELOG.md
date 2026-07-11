@@ -2,6 +2,28 @@
 
 All notable changes to ImageConfusion will be documented in this file.
 
+## [v2.0.0] - 2026-07-11
+
+### Added
+
+- **漫画画廊**：完整的漫画管理功能，支持导入、列表、详情、解密阅读
+- **画廊删除**：在漫画详情页可删除漫画（物理删除 storage 目录）
+- **Storage 隔离**：支持 `IMAGE_CONFUSION_STORAGE_DIR` 环境变量自定义存储目录
+- **PNG 无损加密**：`processImageBuffer` 支持 `png` 格式，画廊加密页使用 PNG 避免有损压缩破坏像素
+
+### Fixed
+
+- **文件上传失效**：修复 ControlBar.vue 上传按钮不传递 File 对象的问题，重新连接 ConfusePage 事件
+- **漫画画廊解密异常**：`/api/gallery/create` 不再对 ZIP 内图片二次加密，含 `metadata.json` 直接导入，否则补写 metadata
+- **Storage 测试污染**：测试使用独立 `storage-test-<uuid>` 目录，避免 `bun test` 删除用户漫画
+- **内存泄漏**：修复 batch 模式下的 blob URL 未释放问题
+- **存储原子写入**：`saveComic` 使用 `.tmp` + `rename` 避免写入中断导致损坏
+
+### Changed
+
+- **Gallery 仅接收 ZIP**：NewComicModal 只接受 `.zip` 文件，并自动检测 `metadata.json`
+- **API 变更**：`/api/gallery/create` 只接收 `zip` 字段，不再接收 `image[]`
+
 ## [v1.4.7] - 2026-07-08
 
 ### Fixed

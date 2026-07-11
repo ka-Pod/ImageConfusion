@@ -25,11 +25,6 @@ const progressCurrent = ref(0)
 const progressTotal = ref(0)
 const showSaveModal = ref(false)
 
-// Refs for file inputs
-const fileInput = ref<HTMLInputElement>()
-const dirInput = ref<HTMLInputElement>()
-const zipInput = ref<HTMLInputElement>()
-
 // Button disabled states
 const encryptDisabled = computed(() =>
   (!hasItems.value && !originalSrc.value) || processing.value
@@ -68,8 +63,8 @@ async function handleEncrypt() {
     } else {
       const blob = await processSingle('encrypt')
       if (blob) {
-        const url = URL.createObjectURL(blob)
-        // Replace preview src
+        if (originalSrc.value.startsWith('blob:')) URL.revokeObjectURL(originalSrc.value)
+        originalSrc.value = URL.createObjectURL(blob)
         showToast('混淆完成', 'success')
       }
     }
@@ -91,6 +86,8 @@ async function handleDecrypt() {
     } else {
       const blob = await processSingle('decrypt')
       if (blob) {
+        if (originalSrc.value.startsWith('blob:')) URL.revokeObjectURL(originalSrc.value)
+        originalSrc.value = URL.createObjectURL(blob)
         showToast('解混淆完成', 'success')
       }
     }
@@ -109,7 +106,8 @@ function handleRestore() {
     if (originalSrc.value.startsWith('blob:')) {
       URL.revokeObjectURL(originalSrc.value)
     }
-    Object.assign(originalSrc, URL.createObjectURL(originalFile.value))
+    originalSrc.value = URL.createObjectURL(originalFile.value)
+    currentAction.value = ''
   }
 }
 
@@ -171,40 +169,6 @@ async function handleBatchDl() {
   }
 }
 
-// File input handlers
-function onFileSelected(event: Event) {
-  const input = event.target as HTMLInputElement
-  if (!input.files || input.files.length === 0) return
-  if (input.files.length === 1) {
-    loadSingleFile(input.files[0])
-  } else {
-    loadBatchFiles(input.files)
-  }
-}
-
-function onDirSelected(event: Event) {
-  const input = event.target as HTMLInputElement
-  if (input.files && input.files.length > 0) {
-    loadBatchFiles(input.files)
-  }
-}
-
-async function onZipSelected(event: Event) {
-  const input = event.target as HTMLInputElement
-  if (!input.files || input.files.length === 0) return
-  showToast('上传并解混淆 ZIP 中...', 'info')
-  try {
-    const form = new FormData()
-    form.append('zip', input.files[0])
-    const res = await fetch('/api/batch/decrypt-zip', { method: 'POST', body: form })
-    if (!res.ok) throw new Error('ZIP 处理失败')
-    const data = await res.json()
-    // ... handle zip batch decrypt
-  } catch (err) {
-    showToast(err instanceof Error ? err.message : 'ZIP 处理失败', 'error')
-  }
-}
-
 function onDropFiles(files: File[]) {
   if (files.length === 1) {
     loadSingleFile(files[0])
@@ -238,6 +202,10 @@ async function onDropZip(file: File) {
       if (imgRes.ok) {
         const blob = await imgRes.blob()
         batchItems.value[i].processedBlob = blob
+        if (batchItems.value[i].processedUrl?.startsWith('blob:')) {
+          URL.revokeObjectURL(batchItems.value[i].processedUrl!)
+        }
+        batchItems.value[i].processedUrl = URL.createObjectURL(blob)
         batchItems.value[i].status = 'decrypted'
       }
     }
@@ -270,6 +238,8 @@ useKeyboard(
           :restore-disabled="restoreDisabled"
           :download-disabled="downloadDisabled"
           :batch-dl-disabled="batchDlDisabled"
+          @files-selected="onDropFiles"
+          @zip-selected="onDropZip"
           @encrypt="handleEncrypt"
           @decrypt="handleDecrypt"
           @restore="handleRestore"
@@ -278,32 +248,6 @@ useKeyboard(
         />
       </template>
     </AppHeader>
-
-    <!-- Hidden file inputs -->
-    <input
-      ref="fileInput"
-      type="file"
-      multiple
-      accept="image/*"
-      hidden
-      @change="onFileSelected"
-    />
-    <input
-      ref="dirInput"
-      type="file"
-      webkitdirectory
-      multiple
-      accept="image/*"
-      hidden
-      @change="onDirSelected"
-    />
-    <input
-      ref="zipInput"
-      type="file"
-      accept=".zip"
-      hidden
-      @change="onZipSelected"
-    />
 
     <ProgressBar
       :show="progressShow"
@@ -334,13 +278,13 @@ useKeyboard(
         >
           <div v-if="item.status === 'processing' && !item.processedBlob" class="shimmer-placeholder"></div>
           <img
-            v-else-if="item.processedBlob"
-            :src="URL.createObjectURL(item.processedBlob)"
+            v-if="item.processedUrl"
+            :src="item.processedUrl"
             alt=""
           />
           <img
-            v-else-if="item.file && item.file.size > 0"
-            :src="URL.createObjectURL(item.file)"
+            v-else-if="item.fileUrl"
+            :src="item.fileUrl"
             alt=""
           />
           <div v-if="item.status === 'encrypted'" class="preview-overlay">已混淆</div>

@@ -21,13 +21,13 @@ const emit = defineEmits<{
     >
       <div class="thumb-idx">{{ i + 1 }}/{{ items.length }}</div>
       <img
-        v-if="item.processedBlob"
-        :src="URL.createObjectURL(item.processedBlob)"
+        v-if="item.processedUrl"
+        :src="item.processedUrl"
         alt=""
       />
       <img
-        v-else-if="item.file && item.file.size > 0"
-        :src="URL.createObjectURL(item.file)"
+        v-else-if="item.fileUrl"
+        :src="item.fileUrl"
         alt=""
       />
       <div v-else class="thumb-placeholder"></div>
