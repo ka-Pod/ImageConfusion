@@ -169,6 +169,23 @@ api.get('/:id', async (c: Context) => {
   return c.json(comic)
 })
 
+api.get('/:id/page/:n', async (c: Context) => {
+  const id = c.req.param('id') || ''
+  const pageParam = c.req.param('n')
+  const page = pageParam ? parseInt(pageParam, 10) : Number.NaN
+  if (Number.isNaN(page) || page < 0) return c.json({ error: 'Invalid page' }, 400)
+
+  const jpeg = await storage.getOrCreatePage(id, page)
+  if (!jpeg) return c.notFound()
+
+  const totalPages = await storage.getComicTotalPages(id)
+  if (totalPages > 0) {
+    storage.prefetchPages(id, page, totalPages).catch(() => {})
+  }
+
+  return c.body(new Uint8Array(jpeg), 200, { 'Content-Type': 'image/jpeg' })
+})
+
 api.delete('/:id', async (c: Context) => {
   try {
     const id = c.req.param('id') || ''

@@ -180,3 +180,43 @@ export async function cleanupDecryptSession(sessionId: string): Promise<void> {
     await rm(dir, { recursive: true, force: true })
   }
 }
+
+export async function getComicTotalPages(id: string): Promise<number> {
+  const zipPath = join(getStorageDir(), id, 'encrypted.zip')
+  if (!existsSync(zipPath)) return 0
+  return countPages(zipPath)
+}
+
+export async function getOrCreatePage(id: string, page: number): Promise<Buffer | null> {
+  const zipPath = join(getStorageDir(), id, 'encrypted.zip')
+  if (!existsSync(zipPath)) return null
+
+  const previewDir = join(process.cwd(), 'tmp', 'previews', id)
+  const cachedPath = join(previewDir, `page_${String(page + 1).padStart(3, '0')}.jpg`)
+  if (existsSync(cachedPath)) {
+    return await readFile(cachedPath)
+  }
+
+  const pageBuffer = await extractZipEntry(zipPath, `page_${String(page + 1).padStart(3, '0')}.png`)
+  if (!pageBuffer) return null
+
+  const raw = await sharp(pageBuffer).ensureAlpha().raw().toBuffer()
+  const { width = 0, height = 0 } = await sharp(pageBuffer).metadata()
+  const decrypted = decryptPixels({ data: new Uint8Array(raw), width, height, channels: 4 })
+  const jpeg = await sharp(Buffer.from(decrypted), { raw: { width, height, channels: 4 } })
+    .jpeg({ quality: 95 })
+    .toBuffer()
+
+  await mkdir(previewDir, { recursive: true })
+  await writeFile(cachedPath, jpeg)
+  return jpeg
+}
+
+export async function prefetchPages(id: string, current: number, total: number): Promise<void> {
+  const targets = [current - 1, current + 1].filter(i => i >= 0 && i < total)
+  for (const target of targets) {
+    const cachedPath = join(process.cwd(), 'tmp', 'previews', id, `page_${String(target + 1).padStart(3, '0')}.jpg`)
+    if (existsSync(cachedPath)) continue
+    await getOrCreatePage(id, target)
+  }
+}

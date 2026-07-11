@@ -4,6 +4,7 @@ import { rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import sharp from 'sharp'
+import * as storage from './gallery-storage'
 import { createZipFile, processImageBuffer } from '../batch'
 
 const TEST_STORAGE = join(process.cwd(), `storage-test-${randomUUID()}`)
@@ -226,5 +227,17 @@ describe('gallery API', () => {
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.ok).toBe(true)
+  })
+
+  test('GET /api/gallery/:id/page/:n returns decrypted page', async () => {
+    const zipBuffer = await createTestZipBuffer()
+    const id = await storage.saveComic(zipBuffer, { name: 'page-api-test', author: '', source: '', createdAt: new Date().toISOString(), coverIndex: 0 })
+
+    const res = await app.request(`/api/gallery/${id}/page/0`)
+    expect(res.status).toBe(200)
+    expect(res.headers.get('content-type')).toContain('image/jpeg')
+    const buffer = Buffer.from(await res.arrayBuffer())
+    expect(buffer[0]).toBe(0xFF)
+    expect(buffer[1]).toBe(0xD8)
   })
 })
