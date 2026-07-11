@@ -69,6 +69,19 @@ describe('gallery storage', () => {
     expect(saved.length).toBeGreaterThan(0)
   })
 
+  test('saveComic generates cover.jpg', async () => {
+    const zipBuffer = await createEncryptedTestZip(1)
+    const meta = { name: 'cover-test', author: '', source: '', createdAt: new Date().toISOString(), coverIndex: 0 }
+    const id = await storage.saveComic(zipBuffer, meta)
+
+    const coverPath = join(TEST_STORAGE, id, 'cover.jpg')
+    expect(existsSync(coverPath)).toBe(true)
+
+    const cover = await readFile(coverPath)
+    expect(cover[0]).toBe(0xFF)
+    expect(cover[1]).toBe(0xD8)
+  })
+
   test('deleteComic removes comic directory', async () => {
     const zipBuffer = await createEncryptedTestZip(1)
     const meta = { name: '待删除', author: '', source: '', createdAt: new Date().toISOString(), coverIndex: 0 }

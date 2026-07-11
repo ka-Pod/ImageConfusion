@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import sharp from 'sharp'
 import { decryptPixels } from '../confuse'
-import { extractZipAll } from '../batch'
+import { extractZipAll, extractZipEntry } from '../batch'
 
 function getStorageDir(): string {
   return process.env.IMAGE_CONFUSION_STORAGE_DIR || join(process.cwd(), 'storage')
@@ -46,11 +46,29 @@ export async function saveComic(zipBuffer: Buffer, meta: ComicMeta): Promise<str
   try {
     await writeFile(tmpPath, zipBuffer)
     await rename(tmpPath, finalPath)
+    await generateCover(finalPath, meta.coverIndex, dir)
   } catch (err) {
     await rm(dir, { recursive: true, force: true }).catch(() => {})
     throw err
   }
   return id
+}
+
+async function generateCover(zipPath: string, coverIndex: number, dir: string): Promise<void> {
+  const coverBuffer = await extractZipEntry(zipPath, coverIndexToName(coverIndex))
+  if (!coverBuffer) return
+  const raw = await sharp(coverBuffer).ensureAlpha().raw().toBuffer()
+  const { width = 0, height = 0 } = await sharp(coverBuffer).metadata()
+  const decrypted = decryptPixels({ data: new Uint8Array(raw), width, height, channels: 4 })
+  const jpeg = await sharp(Buffer.from(decrypted), { raw: { width, height, channels: 4 } })
+    .resize(250)
+    .jpeg({ quality: 70 })
+    .toBuffer()
+  await writeFile(join(dir, 'cover.jpg'), jpeg)
+}
+
+function coverIndexToName(index: number): string {
+  return `page_${String(index + 1).padStart(3, '0')}.png`
 }
 
 export async function deleteComic(id: string): Promise<boolean> {
