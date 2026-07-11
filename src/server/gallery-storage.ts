@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import sharp from 'sharp'
+import unzipper from 'unzipper'
 import { decryptPixels } from '../confuse'
 import { extractZipAll, extractZipEntry } from '../batch'
 
@@ -78,6 +79,17 @@ export async function deleteComic(id: string): Promise<boolean> {
   return true
 }
 
+async function countPages(zipPath: string): Promise<number> {
+  try {
+    const directory = await unzipper.Open.file(zipPath)
+    return directory.files.filter(f =>
+      f.type !== 'Directory' && /^page_\d+\.(png|jpg)$/i.test(f.path.split('/').pop() || '')
+    ).length
+  } catch {
+    return 0
+  }
+}
+
 export async function listComics(): Promise<ComicEntry[]> {
   await ensureStorageDir()
   const storageDir = getStorageDir()
@@ -85,37 +97,22 @@ export async function listComics(): Promise<ComicEntry[]> {
   const comics: ComicEntry[] = []
 
   for (const entry of entries) {
-    const zipPath = join(storageDir, entry, 'encrypted.zip')
+    const dir = join(storageDir, entry)
+    const zipPath = join(dir, 'encrypted.zip')
+    const coverPath = join(dir, 'cover.jpg')
     if (!existsSync(zipPath)) continue
     try {
-      const files = await extractZipAll(await readFile(zipPath))
-      const metaFile = files.find(f => f.name === 'metadata.json')
-      if (!metaFile) continue
-      const meta: ComicMeta = JSON.parse(metaFile.buffer.toString('utf-8'))
-      const imageFiles = files.filter(f => f.name.startsWith('page_') && /\.(jpg|png)$/i.test(f.name))
+      const metaBuffer = await extractZipEntry(zipPath, 'metadata.json')
+      if (!metaBuffer) continue
+      const meta: ComicMeta = JSON.parse(metaBuffer.toString('utf-8'))
 
       let coverBase64 = ''
-      const coverIdx = meta.coverIndex
-      const coverFile = imageFiles[coverIdx]
-      if (coverFile) {
-        const raw = await sharp(coverFile.buffer).ensureAlpha().raw().toBuffer()
-        const meta2 = await sharp(coverFile.buffer).metadata()
-        const w = meta2.width || 0
-        const h = meta2.height || 0
-        const decrypted = decryptPixels({ data: new Uint8Array(raw), width: w, height: h, channels: 4 })
-        const jpeg = await sharp(Buffer.from(decrypted), { raw: { width: w, height: h, channels: 4 } })
-          .resize(200)
-          .jpeg({ quality: 70 })
-          .toBuffer()
-        coverBase64 = jpeg.toString('base64')
+      if (existsSync(coverPath)) {
+        coverBase64 = (await readFile(coverPath)).toString('base64')
       }
 
-      comics.push({
-        id: entry,
-        ...meta,
-        totalPages: imageFiles.length,
-        coverBase64,
-      })
+      const totalPages = await countPages(zipPath)
+      comics.push({ id: entry, ...meta, totalPages, coverBase64 })
     } catch {
       continue
     }
@@ -126,15 +123,22 @@ export async function listComics(): Promise<ComicEntry[]> {
 }
 
 export async function getComic(id: string): Promise<ComicEntry | null> {
-  const zipPath = join(getStorageDir(), id, 'encrypted.zip')
+  const dir = join(getStorageDir(), id)
+  const zipPath = join(dir, 'encrypted.zip')
+  const coverPath = join(dir, 'cover.jpg')
   if (!existsSync(zipPath)) return null
   try {
-    const files = await extractZipAll(await readFile(zipPath))
-    const metaFile = files.find(f => f.name === 'metadata.json')
-    if (!metaFile) return null
-    const meta: ComicMeta = JSON.parse(metaFile.buffer.toString('utf-8'))
-    const imageFiles = files.filter(f => f.name.startsWith('page_') && /\.(jpg|png)$/i.test(f.name))
-    return { id, ...meta, totalPages: imageFiles.length }
+    const metaBuffer = await extractZipEntry(zipPath, 'metadata.json')
+    if (!metaBuffer) return null
+    const meta: ComicMeta = JSON.parse(metaBuffer.toString('utf-8'))
+
+    let coverBase64 = ''
+    if (existsSync(coverPath)) {
+      coverBase64 = (await readFile(coverPath)).toString('base64')
+    }
+
+    const totalPages = await countPages(zipPath)
+    return { id, ...meta, totalPages, coverBase64 }
   } catch {
     return null
   }

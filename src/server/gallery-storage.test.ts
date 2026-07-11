@@ -106,6 +106,7 @@ describe('gallery storage', () => {
     expect(found!.author).toBe('测试作者')
     expect(found!.source).toBe('测试来源')
     expect(found!.totalPages).toBe(3)
+    expect(found!.coverBase64).toBeTruthy()
   })
 
   test('listComics includes coverBase64 for cover page', async () => {
@@ -122,6 +123,7 @@ describe('gallery storage', () => {
     expect(comic!.id).toBe(testIds[0])
     expect(comic!.name).toBe('测试漫画')
     expect(comic!.totalPages).toBe(3)
+    expect(comic!.coverBase64).toBeTruthy()
   })
 
   test('getComic returns null for nonexistent id', async () => {
