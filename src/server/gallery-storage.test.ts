@@ -98,6 +98,20 @@ describe('gallery storage', () => {
     expect(deleted).toBe(false)
   })
 
+  test('deleteComic removes preview cache', async () => {
+    const zipBuffer = await createEncryptedTestZip(1)
+    const meta = { name: 'delete-cache-test', author: '', source: '', createdAt: new Date().toISOString(), coverIndex: 0 }
+    const id = await storage.saveComic(zipBuffer, meta)
+
+    // trigger cache creation
+    await storage.getOrCreatePage(id, 0)
+    const previewDir = join(process.cwd(), 'tmp', 'previews', id)
+    expect(existsSync(previewDir)).toBe(true)
+
+    await storage.deleteComic(id)
+    expect(existsSync(previewDir)).toBe(false)
+  })
+
   test('listComics returns saved comic', async () => {
     const comics = await storage.listComics()
     const found = comics.find(c => testIds.includes(c.id))

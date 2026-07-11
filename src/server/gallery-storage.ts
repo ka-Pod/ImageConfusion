@@ -76,6 +76,10 @@ export async function deleteComic(id: string): Promise<boolean> {
   const dir = join(getStorageDir(), id)
   if (!existsSync(dir)) return false
   await rm(dir, { recursive: true, force: true })
+  const previewDir = join(process.cwd(), 'tmp', 'previews', id)
+  if (existsSync(previewDir)) {
+    await rm(previewDir, { recursive: true, force: true })
+  }
   return true
 }
 
