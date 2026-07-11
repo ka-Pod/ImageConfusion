@@ -118,6 +118,21 @@ export async function extractZipAll(zipBuffer: Buffer): Promise<{ name: string; 
   return extractZipGeneric(zipBuffer, () => true)
 }
 
+export async function extractZipEntry(zipPath: string, entryName: string): Promise<Buffer | null> {
+  try {
+    const directory = await unzipper.Open.file(zipPath)
+    const file = directory.files.find(f => f.path.split('/').pop() === entryName)
+    if (!file || file.type === 'Directory') return null
+    const chunks: Buffer[] = []
+    for await (const chunk of file.stream()) {
+      chunks.push(chunk)
+    }
+    return Buffer.concat(chunks)
+  } catch {
+    return null
+  }
+}
+
 export async function saveZipFile(sessionId: string, buffer: Buffer): Promise<string> {
   const dir = await ensureSessionDir(sessionId)
   const zipPath = join(dir, 'results.zip')

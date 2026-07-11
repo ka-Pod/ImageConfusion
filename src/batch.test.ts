@@ -1,5 +1,8 @@
 import { expect, test, describe, beforeAll, beforeEach, afterEach } from 'bun:test'
 import { existsSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { writeFile, rm } from 'node:fs/promises'
 
 describe('batch module exports', () => {
   test('module exports expected functions', async () => {
@@ -16,6 +19,7 @@ describe('batch module exports', () => {
     expect(typeof batch.processBatch).toBe('function')
     expect(typeof batch.extractZipBuffer).toBe('function')
     expect(typeof batch.extractZipAll).toBe('function')
+    expect(typeof batch.extractZipEntry).toBe('function')
     expect(typeof batch.startCleanupTimer).toBe('function')
     expect(typeof batch.stopCleanupTimer).toBe('function')
   })
@@ -253,5 +257,28 @@ describe('processImageBuffer', () => {
 
     expect(decrypted[0]).toBe(0xFF)
     expect(decrypted[1]).toBe(0xD8)
+  })
+})
+
+describe('extractZipEntry', () => {
+  test('reads a single entry by name', async () => {
+    const { createZipFile, extractZipEntry } = await import('./batch')
+    const zipBuffer = await createZipFile([
+      { name: 'metadata.json', buffer: Buffer.from('{"name":"test"}') },
+      { name: 'page_001.png', buffer: Buffer.from('hello-page') },
+    ])
+    const tmpPath = join(tmpdir(), `entry-test-${Date.now()}.zip`)
+    await writeFile(tmpPath, zipBuffer)
+
+    const meta = await extractZipEntry(tmpPath, 'metadata.json')
+    expect(meta?.toString('utf-8')).toBe('{"name":"test"}')
+
+    const page = await extractZipEntry(tmpPath, 'page_001.png')
+    expect(page?.toString('utf-8')).toBe('hello-page')
+
+    const missing = await extractZipEntry(tmpPath, 'missing.txt')
+    expect(missing).toBeNull()
+
+    await rm(tmpPath, { force: true })
   })
 })
