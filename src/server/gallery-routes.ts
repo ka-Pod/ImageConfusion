@@ -1,8 +1,10 @@
 import { Hono, type Context } from 'hono'
 import { readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
+import sharp from 'sharp'
 import * as storage from './gallery-storage'
-import { processImageBuffer, createZipFile, extractZipBuffer } from '../batch'
+import { createZipFile, extractZipAll, extractZipBuffer } from '../batch'
+import { encryptPixels, decryptPixels } from '../confuse'
 import { log } from '../logger'
 
 const api = new Hono()
@@ -10,56 +12,61 @@ const api = new Hono()
 api.post('/create', async (c: Context) => {
   try {
     const formData = await c.req.formData()
-    const fileEntries = formData.getAll('image')
-    const name = formData.get('name') as string
+    const zipFile = formData.get('zip')
+    const name = (formData.get('name') as string) || ''
     const author = (formData.get('author') as string) || ''
     const source = (formData.get('source') as string) || ''
 
-    if (!name) return c.json({ error: '请输入漫画名称' }, 400)
-    if (fileEntries.length === 0) return c.json({ error: '请上传图片' }, 400)
-
-    const files: { name: string; buffer: Buffer }[] = []
-    for (const entry of fileEntries) {
-      if (!(entry instanceof File)) continue
-      const buffer = Buffer.from(await entry.arrayBuffer())
-
-      if (entry.name.toLowerCase().endsWith('.zip')) {
-        const extracted = await extractZipBuffer(buffer)
-        const hasMeta = extracted.some(f => f.name === 'metadata.json')
-        if (hasMeta) {
-          const metaFile = extracted.find(f => f.name === 'metadata.json')
-          if (metaFile) {
-            const existingMeta = JSON.parse(metaFile.buffer.toString('utf-8'))
-            const id = await storage.saveComic(buffer, existingMeta)
-            await log('INFO', `gallery import: ${existingMeta.name} (${id})`)
-            return c.json({ id, name: existingMeta.name, totalPages: extracted.length - 1 })
-          }
-        }
-        for (const f of extracted) {
-          if (/\.(png|jpg|jpeg|webp)$/i.test(f.name)) {
-            const processed = await processImageBuffer(f.buffer, 'encrypt')
-            const idx = String(files.length + 1).padStart(3, '0')
-            files.push({ name: `page_${idx}.jpg`, buffer: processed })
-          }
-        }
-      } else {
-        const processed = await processImageBuffer(buffer, 'encrypt')
-        const idx = String(files.length + 1).padStart(3, '0')
-        files.push({ name: `page_${idx}.jpg`, buffer: processed })
-      }
+    if (!(zipFile instanceof File)) {
+      return c.json({ error: '请上传 ZIP 文件' }, 400)
     }
 
-    if (files.length === 0) return c.json({ error: '没有可处理的图片' }, 400)
+    const zipBuffer = Buffer.from(await zipFile.arrayBuffer())
+    const extracted = await extractZipAll(zipBuffer)
 
-    const meta = { name, author, source, createdAt: new Date().toISOString(), coverIndex: 0 }
-    const metaBuffer = Buffer.from(JSON.stringify(meta, null, 2))
-    files.unshift({ name: 'metadata.json', buffer: metaBuffer })
+    const metaFile = extracted.find(f => f.name === 'metadata.json')
+    if (metaFile) {
+      const existingMeta: storage.ComicMeta = JSON.parse(metaFile.buffer.toString('utf-8'))
+      const imageFiles = extracted.filter(f => f.name.startsWith('page_') && /\.(jpg|png)$/i.test(f.name))
+      const id = await storage.saveComic(zipBuffer, existingMeta)
+      await log('INFO', `gallery import: ${existingMeta.name} (${id})`)
+      return c.json({ id, name: existingMeta.name, totalPages: imageFiles.length })
+    }
 
-    const zipBuffer = await createZipFile(files)
-    const id = await storage.saveComic(zipBuffer, meta)
+    if (!name.trim()) {
+      return c.json({ error: '请输入漫画名称' }, 400)
+    }
+
+    const IMAGE_EXTENSIONS = /\.(png|jpg|jpeg|webp)$/i
+    const imageFiles = extracted
+      .filter(f => IMAGE_EXTENSIONS.test(f.name))
+      .sort((a, b) => a.name.localeCompare(b.name))
+
+    if (imageFiles.length === 0) {
+      return c.json({ error: 'ZIP 内未找到图片' }, 400)
+    }
+
+    const pageFiles = imageFiles.map((f, i) => ({
+      name: `page_${String(i + 1).padStart(3, '0')}.png`,
+      buffer: f.buffer,
+    }))
+
+    const meta: storage.ComicMeta = {
+      name,
+      author,
+      source,
+      createdAt: new Date().toISOString(),
+      coverIndex: 0,
+    }
+
+    const newZipBuffer = await createZipFile([
+      { name: 'metadata.json', buffer: Buffer.from(JSON.stringify(meta, null, 2)) },
+      ...pageFiles,
+    ])
+
+    const id = await storage.saveComic(newZipBuffer, meta)
     await log('INFO', `gallery create: ${name} (${id})`)
-
-    return c.json({ id, name, totalPages: files.length - 1 })
+    return c.json({ id, name, totalPages: pageFiles.length })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     await log('ERROR', `gallery create failed: ${msg}`)
@@ -102,11 +109,18 @@ api.post('/save-from-batch', async (c: Context) => {
 
     const meta = { name, author, source, createdAt: new Date().toISOString(), coverIndex: 0 }
     const metaBuffer = Buffer.from(JSON.stringify(meta, null, 2))
-    const repackFiles = [{ name: 'metadata.json', buffer: metaBuffer }]
-    images.forEach((img, i) => {
+    const repackFiles: { name: string; buffer: Buffer }[] = [{ name: 'metadata.json', buffer: metaBuffer }]
+    for (let i = 0; i < images.length; i++) {
       const idx = String(i + 1).padStart(3, '0')
-      repackFiles.push({ name: `page_${idx}.jpg`, buffer: Buffer.from(img.buffer) })
-    })
+      const raw = await sharp(images[i].buffer).ensureAlpha().raw().toBuffer()
+      const imgMeta = await sharp(images[i].buffer).metadata()
+      const w = imgMeta.width || 0
+      const h = imgMeta.height || 0
+      const decrypted = decryptPixels({ data: new Uint8Array(raw), width: w, height: h, channels: 4 })
+      const reEncrypted = encryptPixels({ data: decrypted, width: w, height: h, channels: 4 })
+      const png = await sharp(Buffer.from(reEncrypted), { raw: { width: w, height: h, channels: 4 } }).png().toBuffer()
+      repackFiles.push({ name: `page_${idx}.png`, buffer: png })
+    }
 
     const zipBuf = await createZipFile(repackFiles)
     const id = await storage.saveComic(zipBuf, meta)
@@ -140,6 +154,14 @@ api.get('/list', async (c: Context) => {
   }
 })
 
+api.get('/decrypt/:sessionId/page/:n', async (c: Context) => {
+  const { sessionId, n } = c.req.param()
+  const pagePath = storage.getDecryptedPage(sessionId, parseInt(n, 10))
+  if (!existsSync(pagePath)) return c.json({ error: '页面不存在' }, 404)
+  const buffer = await readFile(pagePath)
+  return c.body(new Uint8Array(buffer), 200, { 'Content-Type': 'image/jpeg' })
+})
+
 api.get('/:id', async (c: Context) => {
   const id = c.req.param('id') || ''
   const comic = await storage.getComic(id)
@@ -152,14 +174,6 @@ api.post('/:id/decrypt', async (c: Context) => {
   const result = await storage.decryptComic(id)
   if (!result) return c.json({ error: '漫画不存在或解密失败' }, 404)
   return c.json(result)
-})
-
-api.get('/decrypt/:sessionId/page/:n', async (c: Context) => {
-  const { sessionId, n } = c.req.param()
-  const pagePath = storage.getDecryptedPage(sessionId, parseInt(n, 10))
-  if (!existsSync(pagePath)) return c.json({ error: '页面不存在' }, 404)
-  const buffer = await readFile(pagePath)
-  return c.body(new Uint8Array(buffer), 200, { 'Content-Type': 'image/jpeg' })
 })
 
 export { api }
