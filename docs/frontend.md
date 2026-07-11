@@ -688,6 +688,35 @@ IMAGE CONFUSION · ENCRYPT / DECRYPT · SERVER SIDE
 
 ## 画廊页面
 
+### ContextMenu
+
+通用右键菜单组件，用于在漫画卡片上弹出操作菜单。
+
+```
+┌─────────────────────────┐
+│ 查看详情                │
+│ 解密阅读                │
+│ 删除漫画                │
+└─────────────────────────┘
+```
+
+**用法：**
+
+```vue
+<ContextMenu
+  v-if="menuVisible"
+  :x="menuX"
+  :y="menuY"
+  :items="menuItems"
+  @select="handleSelect"
+  @close="closeMenu"
+/>
+```
+
+- 菜单项包含 `label` 与 `value`，支持点击外部或按 `Esc` 关闭
+- 定位使用 `position: fixed`，通过 `x`、`y` 传入鼠标坐标
+- 触发选择后调用 `onSelect(value)` 并自动关闭
+
 ### NewComicModal
 
 新建漫画弹窗，**只接收加密 ZIP**。
@@ -720,21 +749,28 @@ IMAGE CONFUSION · ENCRYPT / DECRYPT · SERVER SIDE
 
 - 封面由服务端解密第一页并生成 base64 JPEG
 - 点击进入 `ComicDetailPage`
+- **右键菜单**：在漫画卡片上右键可调出 `ContextMenu`，支持：
+  - **查看详情**：跳转到 `ComicDetailPage`
+  - **解密阅读**：直接跳转到 `ReaderPage`
+  - **删除漫画**：弹出浏览器 `confirm` 确认框，确认后调用 `DELETE /api/gallery/:id`，删除成功后刷新列表
 
 ### ComicDetailPage
 
 漫画详情页，显示元信息和操作按钮。
 
-- 点击"解密阅读"调用 `POST /api/gallery/:id/decrypt`
-- 获取 `sessionId` 后跳转到 `ReaderPage`
+- 显示真实解密后的封面缩略图（来自 `coverBase64`）
+- 点击"解密阅读"跳转到 `ReaderPage`
 - 点击"删除漫画"弹出浏览器 `confirm` 确认框
 - 确认后调用 `DELETE /api/gallery/:id`
 - 删除成功后返回 `GalleryPage`
 
 ### ReaderPage
 
-翻页阅读器，逐页从 `GET /api/gallery/decrypt/:sessionId/page/:n` 加载解密后的 JPEG。
+翻页阅读器，按需从 `GET /api/gallery/:id/page/:n` 加载解密后的 JPEG。
 
+- 当前页通过单页接口实时解密并显示
+- 解密后的页面缓存到 `tmp/previews/:id/`，翻页时优先读取缓存
+- 加载当前页后异步预取相邻页（上一页 / 下一页）
 - 支持键盘左右翻页
 - 支持触摸滑动
 - 离开页面时调用 `POST /api/gallery/cleanup` 释放临时文件

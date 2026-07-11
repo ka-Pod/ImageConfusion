@@ -237,13 +237,35 @@
   "source": "腾讯动漫",
   "createdAt": "2026-07-10T12:00:00Z",
   "coverIndex": 0,
-  "totalPages": 32
+  "totalPages": 32,
+  "coverBase64": "/9j/4AAQ..."
 }
 ```
+
+- `coverBase64`：已解密的封面 JPEG base64 缩略图
+
+---
+
+## GET /api/gallery/:id/page/:n
+
+按需解密并返回漫画第 n 页（从 0 开始计数）。
+
+首次请求会实时从 `encrypted.zip` 中读取对应页面、解密并缓存到 `tmp/previews/:id/`；后续请求直接返回缓存。返回前会异步预取相邻页。
+
+**路径参数**：
+- `id`：漫画 ID
+- `n`：页码，从 0 开始
+
+**响应**：
+- `200`：返回 JPEG 图片
+- `400`：页码无效
+- `404`：漫画或页面不存在
 
 ---
 
 ## POST /api/gallery/:id/decrypt
+
+> **已废弃，ReaderPage 不再使用。** 新阅读器直接通过 `GET /api/gallery/:id/page/:n` 按需加载单页。
 
 解密指定漫画的全部页面。
 
@@ -257,6 +279,8 @@
 ---
 
 ## GET /api/gallery/decrypt/:sessionId/page/:n
+
+> **已废弃。** 新阅读器使用 `GET /api/gallery/:id/page/:n`。
 
 获取指定页的解密图片。
 

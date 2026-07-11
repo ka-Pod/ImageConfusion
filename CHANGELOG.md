@@ -2,6 +2,27 @@
 
 All notable changes to ImageConfusion will be documented in this file.
 
+## [v2.1.0] - 2026-07-11
+
+### Added
+
+- **画廊右键菜单**：在漫画卡片上右键可调出"查看详情"、"解密阅读"、"删除漫画"菜单
+- **真实封面显示**：漫画详情页显示解密后的封面缩略图
+- **按需单页解密**：阅读器改为 `GET /api/gallery/:id/page/:n` 按需加载，支持大文件漫画
+- **页面预渲染缓存**：解密后的页面缓存到 `tmp/previews/:id/`，翻页时预取相邻页
+- **vue-tsc 类型检查**：lint 脚本改用 `vue-tsc --noEmit`，覆盖 Vue 单文件组件
+
+### Changed
+
+- `listComics` / `getComic` 直接读取 `cover.jpg` 缓存，不再全量解压 ZIP
+- `saveComic` 保存漫画时预生成 `cover.jpg`
+- 删除漫画时同步清理 `tmp/previews/:id/` 缓存
+
+### Fixed
+
+- `ReaderPage.vue` blob URL 内存泄漏
+- 多处 Vue/TS 未使用变量和 ref 类型错误
+
 ## [v2.0.0] - 2026-07-11
 
 ### Added
