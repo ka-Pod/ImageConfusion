@@ -9,7 +9,7 @@
     "start": "bun run src/index.ts",
     "build": "vite build",
     "test": "bun test",
-    "lint": "bunx tsc --noEmit"
+    "lint": "vue-tsc --noEmit"
   },
   "dependencies": {
     "archiver": "^8.0.0",
@@ -26,6 +26,7 @@
     "@vitejs/plugin-vue": "^6.0.7",
     "concurrently": "^10.0.3",
     "typescript": "^5.7.0",
-    "vite": "^8.1.4"
+    "vite": "^8.1.4",
+    "vue-tsc": "^3.3.7"
   }
 }
