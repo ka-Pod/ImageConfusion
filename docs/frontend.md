@@ -686,6 +686,56 @@ IMAGE CONFUSION · ENCRYPT / DECRYPT · SERVER SIDE
 }
 ```
 
+## 画廊页面
+
+### NewComicModal
+
+新建漫画弹窗，**只接收加密 ZIP**。
+
+```
+┌─────────────────────────────┐
+│ 新建漫画                     │
+│ 漫画名称 [         ]         │
+│ 作者 [           ]           │
+│ 图源 [           ]           │
+│ 上传加密 ZIP [选择文件]      │
+│ 已选择 encrypt_results.zip   │
+│                    [取消][创建]
+└─────────────────────────────┘
+```
+
+**交互逻辑：**
+
+1. 用户选择 ZIP 后，前端使用 `FileReader` 读取 buffer，通过字符串扫描检测是否包含 `metadata.json`
+2. 若含 `metadata.json`：
+   - `name` 输入框禁用
+   - 显示提示"已检测到漫画元数据，将直接导入"
+3. 若不含 `metadata.json`：
+   - `name` 输入框必填
+4. 提交字段：`zip`（单个文件）+ `name`（条件必填）+ `author` + `source`
+
+### GalleryPage
+
+漫画网格列表，展示每部漫画的封面、名称、作者、总页数。
+
+- 封面由服务端解密第一页并生成 base64 JPEG
+- 点击进入 `ComicDetailPage`
+
+### ComicDetailPage
+
+漫画详情页，显示元信息和"解密阅读"按钮。
+
+- 点击"解密阅读"调用 `POST /api/gallery/:id/decrypt`
+- 获取 `sessionId` 后跳转到 `ReaderPage`
+
+### ReaderPage
+
+翻页阅读器，逐页从 `GET /api/gallery/decrypt/:sessionId/page/:n` 加载解密后的 JPEG。
+
+- 支持键盘左右翻页
+- 支持触摸滑动
+- 离开页面时调用 `POST /api/gallery/cleanup` 释放临时文件
+
 ## 浏览器兼容性
 
 - 标准 DOM API + Fetch + Blob + FormData

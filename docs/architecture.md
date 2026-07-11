@@ -17,8 +17,9 @@
     │── POST /api/decrypt ──────→│  sharp 解码 → Gilbert 解混淆 → sharp 编码 JPEG
     │←──── 还原后图片 ───────────│
     │                            │
+    │── POST /api/gallery/create ─→│  接收加密 ZIP → 含 metadata 直接导入，否则补写 metadata
     │── GET /api/gallery/list ──→│  扫描 storage/ → 读取 metadata → 返回漫画列表
-    │── POST /api/gallery/:id/decrypt → 读取 storage/ → 解谜全部页 → 存入 tmp/
+    │── POST /api/gallery/:id/decrypt → 读取 storage/ → 解密全部页 → 存入 tmp/
 ```
 
 ## 核心模块
@@ -102,13 +103,33 @@
 | 清理时机 | ① ZIP 下载后删除 ② 新批次清理旧 session ③ TTL 30 分钟 ④ 服务启动清场 |
 | 清理实现 | 定时器每 5 分钟扫描，删除过期文件 |
 
+### 画廊导入流程
+
+**通过 NewComicModal 上传 ZIP：**
+
+```
+用户选择 ZIP → 前端本地检测 metadata.json
+  │
+  ├── 含 metadata.json → 禁用 name 输入 → POST /api/gallery/create (zip)
+  │   → 服务端直接保存原 ZIP → 返回 { id, name, totalPages }
+  │
+  └── 不含 metadata.json → name 必填 → POST /api/gallery/create (zip + name + author + source)
+      → 服务端解压 → 提取图片 → 补写 metadata.json
+      → 重新打包为 page_NNN.png → 保存 → 返回 { id, name, totalPages }
+```
+
+**关键约束：**
+- Gallery 只接收 ZIP，不接收单张/多张图片
+- 导入流程不对图片像素做任何变换（不再调用 encrypt）
+- 不含 metadata 的 ZIP 内图片统一重命名为 `page_NNN.png`，保持原 buffer
+
 ### 画廊存储
 
 | 项目 | 详情 |
 |------|------|
 | 根目录 | `storage/` |
 | 组织结构 | `storage/<comic-id>/encrypted.zip` |
-| 漫画 ZIP 格式 | 内含 `metadata.json` + `page_NNN.jpg`（混淆后图片） |
+| 漫画 ZIP 格式 | 内含 `metadata.json` + `page_NNN.png/jpg`（混淆后图片） |
 | metadata.json | `{ name, author, source, createdAt, coverIndex }` |
 | 生命周期 | 永久保存，直到用户手动删除 |
 | 解密临时文件 | `tmp/gallery-{sessionId}/page_NNN.jpg`，退出阅读时清理 |

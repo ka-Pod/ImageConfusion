@@ -142,21 +142,34 @@
 
 ## POST /api/gallery/create
 
-上传图片创建漫画，服务端混淆后打包为漫画 ZIP 存入 storage/。
+上传加密 ZIP 创建或导入漫画。Gallery 只接收 ZIP，不再接收单张/多张图片。
 
 **请求：** `multipart/form-data`
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| image[] | file[] | 原始图片（单张或多张） |
-| name | string | 漫画名称（必填） |
-| author | string | 作者（可选） |
-| source | string | 图源（可选） |
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| zip | file | 是 | 加密漫画 ZIP（单次 ≤ 200MB） |
+| name | string | 条件必填 | ZIP 不含 `metadata.json` 时必填 |
+| author | string | 否 | 作者 |
+| source | string | 否 | 图源 |
+
+**处理逻辑：**
+
+- ZIP 含 `metadata.json` → 直接导入，使用已有元数据
+- ZIP 不含 `metadata.json` → 视为 batch 加密结果，按表单 `name` 补写 `metadata.json` 后保存
+- 导入流程**不会**对 ZIP 内图片再次混淆
 
 **响应：** `200 application/json`
 ```json
 { "id": "uuid", "name": "海贼王 第1话", "totalPages": 32 }
 ```
+
+**错误响应：**
+
+| 状态码 | 错误说明 |
+|---|---|
+| 400 | 未上传 ZIP / ZIP 不含 metadata 且未填 name / ZIP 内无图片 / ZIP 损坏 / metadata 解析失败 |
+| 500 | 保存失败 |
 
 ---
 
