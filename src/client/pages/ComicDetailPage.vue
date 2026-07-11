@@ -10,7 +10,6 @@ const { showToast } = useToast()
 
 const comic = ref<ComicMeta | null>(null)
 const loading = ref(true)
-const decrypting = ref(false)
 const deleting = ref(false)
 const comicId = route.params.id as string
 
@@ -28,19 +27,8 @@ async function loadDetail() {
   }
 }
 
-async function handleDecrypt() {
-  if (!comic.value) return
-  decrypting.value = true
-  try {
-    const res = await fetch(`/api/gallery/${comicId}/decrypt`, { method: 'POST' })
-    if (!res.ok) throw new Error('解密失败')
-    const data = await res.json() as { sessionId: string; totalPages: number }
-    router.push(`/gallery/${comicId}/reader?session=${data.sessionId}&total=${data.totalPages}`)
-  } catch (err) {
-    showToast(err instanceof Error ? err.message : '解密失败', 'error')
-  } finally {
-    decrypting.value = false
-  }
+function startReading() {
+  router.push(`/gallery/${comicId}/reader?total=${comic.value?.totalPages || 0}`)
 }
 
 async function handleDelete() {
@@ -77,7 +65,13 @@ onMounted(() => {
     <div class="detail-layout">
       <div class="cover-section">
         <div class="cover-frame">
-          <div class="cover-placeholder">封面</div>
+          <img
+            v-if="comic.coverBase64"
+            :src="`data:image/jpeg;base64,${comic.coverBase64}`"
+            :alt="comic.name"
+            class="cover-image"
+          />
+          <div v-else class="cover-placeholder">暂无封面</div>
         </div>
       </div>
 
@@ -101,12 +95,8 @@ onMounted(() => {
           <span class="info-value">{{ comic.totalPages }} 页</span>
         </div>
 
-        <button
-          class="btn btn-primary decrypt-btn"
-          :disabled="decrypting"
-          @click="handleDecrypt"
-        >
-          {{ decrypting ? '解密中...' : '开始解密并阅读' }}
+        <button class="btn btn-primary decrypt-btn" @click="startReading">
+          开始阅读
         </button>
 
         <button
@@ -154,6 +144,12 @@ onMounted(() => {
   border: 2px solid var(--border);
   box-shadow: var(--shadow);
   overflow: hidden;
+}
+
+.cover-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .cover-placeholder {

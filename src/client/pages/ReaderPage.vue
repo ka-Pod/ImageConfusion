@@ -8,25 +8,36 @@ import { useKeyboard } from '../composables/useKeyboard'
 const route = useRoute()
 const router = useRouter()
 const comicId = route.params.id as string
-const sessionId = route.query.session as string
 const currentPage = ref(0)
 const totalPages = ref(parseInt((route.query.total as string) || '0', 10))
 const pageSrc = ref('')
 const loading = ref(true)
 
+let currentObjectUrl = ''
+
 async function loadPage(index: number) {
+  if (index < 0 || index >= totalPages.value) return
   loading.value = true
   try {
-    const res = await fetch(`/api/gallery/decrypt/${sessionId}/page/${index}`)
+    const res = await fetch(`/api/gallery/${comicId}/page/${index}`)
     if (!res.ok) throw new Error('加载页面失败')
     const blob = await res.blob()
-    pageSrc.value = URL.createObjectURL(blob)
+    if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl)
+    currentObjectUrl = URL.createObjectURL(blob)
+    pageSrc.value = currentObjectUrl
     currentPage.value = index
   } catch (err) {
     pageSrc.value = ''
   } finally {
     loading.value = false
   }
+  preloadPage(index - 1)
+  preloadPage(index + 1)
+}
+
+function preloadPage(index: number) {
+  if (index < 0 || index >= totalPages.value) return
+  fetch(`/api/gallery/${comicId}/page/${index}`).catch(() => {})
 }
 
 function prevPage() {
@@ -37,16 +48,8 @@ function nextPage() {
   if (currentPage.value < totalPages.value - 1) loadPage(currentPage.value + 1)
 }
 
-async function cleanup() {
-  try {
-    await fetch('/api/gallery/cleanup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId }),
-    })
-  } catch {
-    // silent
-  }
+function closeReader() {
+  router.push('/gallery')
 }
 
 useKeyboard(
@@ -62,18 +65,18 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  cleanup()
+  if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl)
 })
 </script>
 
 <template>
   <div class="reader-page">
     <div class="reader-header">
-      <button class="btn btn-secondary" @click="cleanup(); router.push('/gallery')">
+      <button class="btn btn-secondary" @click="closeReader">
         ← 返回画廊
       </button>
       <span class="reader-title">漫画阅读</span>
-      <button class="btn btn-secondary" @click="cleanup(); router.push('/gallery')">
+      <button class="btn btn-secondary" @click="closeReader">
         关闭 ✕
       </button>
     </div>
