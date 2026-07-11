@@ -13,31 +13,62 @@ const author = ref('')
 const source = ref('')
 const files = ref<File[]>([])
 const uploading = ref(false)
+const zipHasMetadata = ref(false)
 
-function handleFileSelect(event: Event) {
+function checkZipHasMetadata(file: File): Promise<boolean> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      try {
+        const data = new Uint8Array(reader.result as ArrayBuffer)
+        const text = new TextDecoder('utf-8').decode(data)
+        resolve(text.includes('metadata.json'))
+      } catch {
+        reject(new Error('无法读取 ZIP'))
+      }
+    }
+    reader.onerror = () => reject(new Error('读取 ZIP 失败'))
+    reader.readAsArrayBuffer(file)
+  })
+}
+
+async function handleFileSelect(event: Event) {
   const input = event.target as HTMLInputElement
-  if (!input.files) return
-  files.value = Array.from(input.files)
+  if (!input.files || input.files.length === 0) {
+    files.value = []
+    zipHasMetadata.value = false
+    return
+  }
+  const file = input.files[0]
+  files.value = [file]
+  try {
+    zipHasMetadata.value = await checkZipHasMetadata(file)
+    if (zipHasMetadata.value) {
+      name.value = ''
+    }
+  } catch {
+    zipHasMetadata.value = false
+  }
 }
 
 async function handleCreate() {
-  if (!name.value.trim()) {
-    showToast('请输入漫画名称', 'error')
+  if (files.value.length === 0) {
+    showToast('请上传 ZIP 文件', 'error')
     return
   }
-  if (files.value.length === 0) {
-    showToast('请选择图片或 ZIP 文件', 'error')
+  if (!zipHasMetadata.value && !name.value.trim()) {
+    showToast('请输入漫画名称', 'error')
     return
   }
   uploading.value = true
   try {
     const form = new FormData()
-    form.append('name', name.value)
+    if (name.value.trim()) {
+      form.append('name', name.value.trim())
+    }
     form.append('author', author.value)
     form.append('source', source.value)
-    for (const file of files.value) {
-      form.append('image', file)
-    }
+    form.append('zip', files.value[0])
     const res = await fetch('/api/gallery/create', { method: 'POST', body: form })
     if (!res.ok) {
       const errData = await res.json().catch(() => ({ error: '请求失败' }))
@@ -59,8 +90,15 @@ async function handleCreate() {
       <h2>新建漫画</h2>
 
       <div class="form-group">
-        <label>漫画名称 *</label>
-        <input v-model="name" type="text" placeholder="输入漫画名称" class="input" />
+        <label>漫画名称 {{ zipHasMetadata ? '' : '*' }}</label>
+        <input
+          v-model="name"
+          type="text"
+          placeholder="输入漫画名称"
+          class="input"
+          :disabled="zipHasMetadata"
+        />
+        <p v-if="zipHasMetadata" class="hint">已检测到漫画元数据，将直接导入</p>
       </div>
 
       <div class="form-group">
@@ -74,12 +112,12 @@ async function handleCreate() {
       </div>
 
       <div class="form-group">
-        <label>选择图片或 ZIP</label>
-        <input type="file" accept="image/*,.zip" multiple class="input" @change="handleFileSelect" />
+        <label>上传加密 ZIP *</label>
+        <input type="file" accept=".zip" class="input" @change="handleFileSelect" />
       </div>
 
       <div v-if="files.length > 0" class="file-count">
-        已选择 {{ files.length }} 个文件
+        已选择 {{ files[0].name }}
       </div>
 
       <div class="modal-actions">
@@ -141,6 +179,12 @@ async function handleCreate() {
   font-size: 0.8rem;
   color: var(--muted-fg);
   margin-bottom: 0.75rem;
+}
+
+.hint {
+  font-size: 0.75rem;
+  color: var(--muted-fg);
+  margin-top: 0.25rem;
 }
 
 .modal-actions {
