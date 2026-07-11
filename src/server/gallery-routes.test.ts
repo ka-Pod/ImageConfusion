@@ -4,6 +4,7 @@ import { rm, readdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import sharp from 'sharp'
 import { app } from '../app'
+import { createZipFile, processImageBuffer } from '../batch'
 
 const TEST_STORAGE = join(process.cwd(), 'storage')
 
@@ -19,13 +20,13 @@ async function createTestZipBuffer(): Promise<Buffer> {
     pixels[idx + 3] = 255
   }
   const raw = await sharp(Buffer.from(pixels), { raw: { width: 16, height: 16, channels: 4 } }).png().toBuffer()
-  const encrypted = await processImageBuffer(raw, 'encrypt')
+  const encrypted = await processImageBuffer(raw, 'encrypt', 'png')
 
   const meta = { name: 'API测试漫画', author: '测试', source: '单元测试', createdAt: new Date().toISOString(), coverIndex: 0 }
   return await createZipFile([
     { name: 'metadata.json', buffer: Buffer.from(JSON.stringify(meta)) },
-    { name: 'page_001.jpg', buffer: encrypted },
-    { name: 'page_002.jpg', buffer: encrypted },
+    { name: 'page_001.png', buffer: encrypted },
+    { name: 'page_002.png', buffer: encrypted },
   ])
 }
 
@@ -46,7 +47,7 @@ afterAll(async () => {
 describe('gallery API', () => {
   let comicId: string
 
-  test('POST /api/gallery/create creates a comic from uploaded images', async () => {
+  test('POST /api/gallery/create imports encrypted ZIP without metadata', async () => {
     const pixels = new Uint8Array(4 * 8 * 8)
     for (let i = 0; i < 64; i++) {
       const idx = i * 4
@@ -56,10 +57,15 @@ describe('gallery API', () => {
       pixels[idx + 3] = 255
     }
     const imgBuffer = await sharp(Buffer.from(pixels), { raw: { width: 8, height: 8, channels: 4 } }).png().toBuffer()
+    const encrypted = await processImageBuffer(imgBuffer, 'encrypt', 'png')
+
+    const zipBuffer = await createZipFile([
+      { name: 'encrypt_page1.png', buffer: encrypted },
+      { name: 'encrypt_page2.png', buffer: encrypted },
+    ])
 
     const form = new FormData()
-    form.append('image', new Blob([imgBuffer], { type: 'image/png' }), 'page1.png')
-    form.append('image', new Blob([imgBuffer], { type: 'image/png' }), 'page2.png')
+    form.append('zip', new Blob([zipBuffer], { type: 'application/zip' }), 'encrypt_results.zip')
     form.append('name', 'API测试漫画')
     form.append('author', '测试作者')
 
@@ -72,18 +78,33 @@ describe('gallery API', () => {
     comicId = body.id
   })
 
-  test('POST /api/gallery/create without name returns 400', async () => {
+  test('POST /api/gallery/create imports ZIP with metadata directly', async () => {
+    const zipBuffer = await createTestZipBuffer()
+
     const form = new FormData()
-    form.append('image', new Blob([Buffer.from([1])], { type: 'image/png' }), 'test.png')
+    form.append('zip', new Blob([zipBuffer], { type: 'application/zip' }), 'existing_comic.zip')
+
+    const res = await app.request('/api/gallery/create', { method: 'POST', body: form })
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.id).toBeDefined()
+    expect(body.name).toBe('API测试漫画')
+    expect(body.totalPages).toBe(2)
+  })
+
+  test('POST /api/gallery/create without zip returns 400', async () => {
+    const form = new FormData()
+    form.append('name', '测试')
     const res = await app.request('/api/gallery/create', { method: 'POST', body: form })
     expect(res.status).toBe(400)
     const body = await res.json()
     expect(body.error).toBeDefined()
   })
 
-  test('POST /api/gallery/create without images returns 400', async () => {
+  test('POST /api/gallery/create without name and no metadata returns 400', async () => {
+    const zipBuffer = await createZipFile([{ name: 'page.png', buffer: Buffer.from([1, 2, 3]) }])
     const form = new FormData()
-    form.append('name', '测试')
+    form.append('zip', new Blob([zipBuffer], { type: 'application/zip' }), 'no_meta.zip')
     const res = await app.request('/api/gallery/create', { method: 'POST', body: form })
     expect(res.status).toBe(400)
   })
