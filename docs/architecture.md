@@ -19,6 +19,7 @@
     │                            │
     │── POST /api/gallery/create ─→│  接收加密 ZIP → 含 metadata 直接导入，否则补写 metadata
     │── GET /api/gallery/list ──→│  扫描 storage/ → 读取 metadata → 返回漫画列表
+    │── DELETE /api/gallery/:id ─→│  删除 storage/<id>/ 目录
     │── POST /api/gallery/:id/decrypt → 读取 storage/ → 解密全部页 → 存入 tmp/
 ```
 

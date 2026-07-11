@@ -723,10 +723,13 @@ IMAGE CONFUSION · ENCRYPT / DECRYPT · SERVER SIDE
 
 ### ComicDetailPage
 
-漫画详情页，显示元信息和"解密阅读"按钮。
+漫画详情页，显示元信息和操作按钮。
 
 - 点击"解密阅读"调用 `POST /api/gallery/:id/decrypt`
 - 获取 `sessionId` 后跳转到 `ReaderPage`
+- 点击"删除漫画"弹出浏览器 `confirm` 确认框
+- 确认后调用 `DELETE /api/gallery/:id`
+- 删除成功后返回 `GalleryPage`
 
 ### ReaderPage
 

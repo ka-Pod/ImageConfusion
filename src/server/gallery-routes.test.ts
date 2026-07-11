@@ -1,12 +1,14 @@
-import { expect, test, describe, afterAll } from 'bun:test'
+import { expect, test, describe, beforeAll, afterAll } from 'bun:test'
 import { existsSync } from 'node:fs'
-import { rm, readdir } from 'node:fs/promises'
+import { rm } from 'node:fs/promises'
 import { join } from 'node:path'
+import { randomUUID } from 'node:crypto'
 import sharp from 'sharp'
-import { app } from '../app'
 import { createZipFile, processImageBuffer } from '../batch'
 
-const TEST_STORAGE = join(process.cwd(), 'storage')
+const TEST_STORAGE = join(process.cwd(), `storage-test-${randomUUID()}`)
+
+let app: typeof import('../app').app
 
 async function createTestZipBuffer(): Promise<Buffer> {
   const { createZipFile, processImageBuffer } = await import('../batch')
@@ -30,17 +32,15 @@ async function createTestZipBuffer(): Promise<Buffer> {
   ])
 }
 
+beforeAll(async () => {
+  process.env.IMAGE_CONFUSION_STORAGE_DIR = TEST_STORAGE
+  app = (await import('../app')).app
+})
+
 afterAll(async () => {
+  delete process.env.IMAGE_CONFUSION_STORAGE_DIR
   if (existsSync(TEST_STORAGE)) {
-    const entries = await readdir(TEST_STORAGE)
-    for (const entry of entries) {
-      if (entry !== '.gitkeep') {
-        const zipPath = join(TEST_STORAGE, entry, 'encrypted.zip')
-        if (existsSync(zipPath)) {
-          await rm(join(TEST_STORAGE, entry), { recursive: true, force: true })
-        }
-      }
-    }
+    await rm(TEST_STORAGE, { recursive: true, force: true })
   }
 })
 
@@ -131,6 +131,30 @@ describe('gallery API', () => {
 
   test('GET /api/gallery/:id for nonexistent returns 404', async () => {
     const res = await app.request('/api/gallery/nonexistent-id')
+    expect(res.status).toBe(404)
+    const body = await res.json()
+    expect(body.error).toBeDefined()
+  })
+
+  test('DELETE /api/gallery/:id deletes comic', async () => {
+    const zipBuffer = await createTestZipBuffer()
+    const form = new FormData()
+    form.append('zip', new Blob([zipBuffer], { type: 'application/zip' }), 'to_delete.zip')
+    const createRes = await app.request('/api/gallery/create', { method: 'POST', body: form })
+    expect(createRes.status).toBe(200)
+    const { id } = await createRes.json()
+
+    const res = await app.request(`/api/gallery/${id}`, { method: 'DELETE' })
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.ok).toBe(true)
+
+    const getRes = await app.request(`/api/gallery/${id}`)
+    expect(getRes.status).toBe(404)
+  })
+
+  test('DELETE /api/gallery/:id for nonexistent returns 404', async () => {
+    const res = await app.request('/api/gallery/nonexistent-id', { method: 'DELETE' })
     expect(res.status).toBe(404)
     const body = await res.json()
     expect(body.error).toBeDefined()

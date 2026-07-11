@@ -169,6 +169,20 @@ api.get('/:id', async (c: Context) => {
   return c.json(comic)
 })
 
+api.delete('/:id', async (c: Context) => {
+  try {
+    const id = c.req.param('id') || ''
+    const success = await storage.deleteComic(id)
+    if (!success) return c.json({ error: '漫画不存在' }, 404)
+    await log('INFO', `gallery delete: ${id}`)
+    return c.json({ ok: true })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    await log('ERROR', `gallery delete failed: ${msg}`)
+    return c.json({ error: msg }, 500)
+  }
+})
+
 api.post('/:id/decrypt', async (c: Context) => {
   const id = c.req.param('id') || ''
   const result = await storage.decryptComic(id)

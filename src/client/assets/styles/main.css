@@ -102,3 +102,12 @@ img {
   background: var(--accent);
   color: #fff;
 }
+
+.btn-danger {
+  background: var(--error, #ff4d4d);
+  color: #fff;
+}
+
+.btn-danger:hover {
+  background: var(--error-hover, #e60000);
+}

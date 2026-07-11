@@ -11,6 +11,7 @@ const { showToast } = useToast()
 const comic = ref<ComicMeta | null>(null)
 const loading = ref(true)
 const decrypting = ref(false)
+const deleting = ref(false)
 const comicId = route.params.id as string
 
 async function loadDetail() {
@@ -39,6 +40,22 @@ async function handleDecrypt() {
     showToast(err instanceof Error ? err.message : '解密失败', 'error')
   } finally {
     decrypting.value = false
+  }
+}
+
+async function handleDelete() {
+  if (!comic.value) return
+  if (!confirm(`确定要删除《${comic.value.name}》吗？此操作不可恢复。`)) return
+  deleting.value = true
+  try {
+    const res = await fetch(`/api/gallery/${comicId}`, { method: 'DELETE' })
+    if (!res.ok) throw new Error('删除失败')
+    showToast('漫画已删除', 'success')
+    router.push('/gallery')
+  } catch (err) {
+    showToast(err instanceof Error ? err.message : '删除失败', 'error')
+  } finally {
+    deleting.value = false
   }
 }
 
@@ -90,6 +107,14 @@ onMounted(() => {
           @click="handleDecrypt"
         >
           {{ decrypting ? '解密中...' : '开始解密并阅读' }}
+        </button>
+
+        <button
+          class="btn btn-danger delete-btn"
+          :disabled="deleting"
+          @click="handleDelete"
+        >
+          {{ deleting ? '删除中...' : '删除漫画' }}
         </button>
       </div>
     </div>
@@ -170,6 +195,11 @@ onMounted(() => {
 
 .decrypt-btn {
   margin-top: 2rem;
+  width: 100%;
+}
+
+.delete-btn {
+  margin-top: 1rem;
   width: 100%;
 }
 

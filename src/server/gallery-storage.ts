@@ -1,4 +1,4 @@
-import { mkdir, readdir, readFile, writeFile, rm } from 'node:fs/promises'
+import { mkdir, readdir, readFile, writeFile, rm, rename } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
@@ -6,7 +6,9 @@ import sharp from 'sharp'
 import { decryptPixels } from '../confuse'
 import { extractZipAll } from '../batch'
 
-const STORAGE_DIR = join(process.cwd(), 'storage')
+function getStorageDir(): string {
+  return process.env.IMAGE_CONFUSION_STORAGE_DIR || join(process.cwd(), 'storage')
+}
 
 export type ComicMeta = {
   name: string
@@ -23,34 +25,56 @@ export type ComicEntry = ComicMeta & {
 }
 
 async function ensureStorageDir(): Promise<void> {
-  if (!existsSync(STORAGE_DIR)) {
-    await mkdir(STORAGE_DIR, { recursive: true })
+  const dir = getStorageDir()
+  if (!existsSync(dir)) {
+    await mkdir(dir, { recursive: true })
   }
 }
 
-export async function saveComic(zipBuffer: Buffer, _meta: ComicMeta): Promise<string> {
+export async function saveComic(zipBuffer: Buffer, meta: ComicMeta): Promise<string> {
+  if (!zipBuffer || zipBuffer.length === 0) throw new Error('ZIP 数据为空')
+  if (!meta.name.trim()) throw new Error('漫画名称不能为空')
+  if (!meta.createdAt) throw new Error('创建时间不能为空')
+
   await ensureStorageDir()
   const id = randomUUID()
-  const dir = join(STORAGE_DIR, id)
+  const dir = join(getStorageDir(), id)
   await mkdir(dir, { recursive: true })
-  await writeFile(join(dir, 'encrypted.zip'), zipBuffer)
+
+  const tmpPath = join(dir, 'encrypted.zip.tmp')
+  const finalPath = join(dir, 'encrypted.zip')
+  try {
+    await writeFile(tmpPath, zipBuffer)
+    await rename(tmpPath, finalPath)
+  } catch (err) {
+    await rm(dir, { recursive: true, force: true }).catch(() => {})
+    throw err
+  }
   return id
+}
+
+export async function deleteComic(id: string): Promise<boolean> {
+  const dir = join(getStorageDir(), id)
+  if (!existsSync(dir)) return false
+  await rm(dir, { recursive: true, force: true })
+  return true
 }
 
 export async function listComics(): Promise<ComicEntry[]> {
   await ensureStorageDir()
-  const entries = await readdir(STORAGE_DIR)
+  const storageDir = getStorageDir()
+  const entries = await readdir(storageDir)
   const comics: ComicEntry[] = []
 
   for (const entry of entries) {
-    const zipPath = join(STORAGE_DIR, entry, 'encrypted.zip')
+    const zipPath = join(storageDir, entry, 'encrypted.zip')
     if (!existsSync(zipPath)) continue
     try {
       const files = await extractZipAll(await readFile(zipPath))
       const metaFile = files.find(f => f.name === 'metadata.json')
       if (!metaFile) continue
       const meta: ComicMeta = JSON.parse(metaFile.buffer.toString('utf-8'))
-      const imageFiles = files.filter(f => f.name.startsWith('page_') && /\.jpg$/i.test(f.name))
+      const imageFiles = files.filter(f => f.name.startsWith('page_') && /\.(jpg|png)$/i.test(f.name))
 
       let coverBase64 = ''
       const coverIdx = meta.coverIndex
@@ -84,14 +108,14 @@ export async function listComics(): Promise<ComicEntry[]> {
 }
 
 export async function getComic(id: string): Promise<ComicEntry | null> {
-  const zipPath = join(STORAGE_DIR, id, 'encrypted.zip')
+  const zipPath = join(getStorageDir(), id, 'encrypted.zip')
   if (!existsSync(zipPath)) return null
   try {
     const files = await extractZipAll(await readFile(zipPath))
     const metaFile = files.find(f => f.name === 'metadata.json')
     if (!metaFile) return null
     const meta: ComicMeta = JSON.parse(metaFile.buffer.toString('utf-8'))
-    const imageFiles = files.filter(f => f.name.startsWith('page_') && /\.jpg$/i.test(f.name))
+    const imageFiles = files.filter(f => f.name.startsWith('page_') && /\.(jpg|png)$/i.test(f.name))
     return { id, ...meta, totalPages: imageFiles.length }
   } catch {
     return null
@@ -99,11 +123,11 @@ export async function getComic(id: string): Promise<ComicEntry | null> {
 }
 
 export async function decryptComic(id: string): Promise<{ sessionId: string; totalPages: number } | null> {
-  const zipPath = join(STORAGE_DIR, id, 'encrypted.zip')
+  const zipPath = join(getStorageDir(), id, 'encrypted.zip')
   if (!existsSync(zipPath)) return null
 
   const files = await extractZipAll(await readFile(zipPath))
-  const imageFiles = files.filter(f => f.name.startsWith('page_') && /\.jpg$/i.test(f.name))
+  const imageFiles = files.filter(f => f.name.startsWith('page_') && /\.(jpg|png)$/i.test(f.name))
   const sessionId = randomUUID()
   const tmpDir = join(process.cwd(), 'tmp', `gallery-${sessionId}`)
   await mkdir(tmpDir, { recursive: true })

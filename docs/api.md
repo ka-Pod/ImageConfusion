@@ -173,6 +173,19 @@
 
 ---
 
+## DELETE /api/gallery/:id
+
+删除指定漫画及其 storage 目录（物理删除，不可恢复）。
+
+**响应：** `200 application/json`
+```json
+{ "ok": true }
+```
+
+**错误：** `404 { "error": "漫画不存在" }`
+
+---
+
 ## POST /api/gallery/save-from-batch
 
 将批量加密结果保存为漫画（从 /confuse 页面触发）。
