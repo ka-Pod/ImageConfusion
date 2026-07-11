@@ -12,6 +12,9 @@
   --radius: 0;
   --shadow: 4px 4px 0 0 var(--border);
   --shadow-sm: 2px 2px 0 0 var(--border);
+  --duration-fast: 150ms;
+  --duration-normal: 200ms;
+  --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 * {
@@ -110,4 +113,60 @@ img {
 
 .btn-danger:hover {
   background: var(--error-hover, #e60000);
+}
+
+/* Route transition: clean slide-up */
+.route-slide-enter-active,
+.route-slide-leave-active {
+  transition: opacity var(--duration-fast) ease, transform var(--duration-normal) var(--ease-out-expo);
+}
+
+.route-slide-enter-from {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.route-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+.route-slide-enter-to,
+.route-slide-leave-from {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Dialog transition */
+.dialog-pop-enter-active,
+.dialog-pop-leave-active {
+  transition: opacity var(--duration-fast) ease;
+}
+
+.dialog-pop-enter-from,
+.dialog-pop-leave-to {
+  opacity: 0;
+}
+
+.dialog-pop-enter-active .dialog-box,
+.dialog-pop-leave-active .dialog-box {
+  transition: transform var(--duration-normal) var(--ease-out-expo), opacity var(--duration-normal) var(--ease-out-expo);
+}
+
+.dialog-pop-enter-from .dialog-box,
+.dialog-pop-leave-to .dialog-box {
+  opacity: 0;
+  transform: translateY(16px) scale(0.98);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .route-slide-enter-active,
+  .route-slide-leave-active,
+  .dialog-pop-enter-active,
+  .dialog-pop-leave-active,
+  .dialog-pop-enter-active .dialog-box,
+  .dialog-pop-leave-active .dialog-box {
+    transition-duration: 0.01ms !important;
+  }
 }

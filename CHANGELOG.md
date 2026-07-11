@@ -2,6 +2,17 @@
 
 All notable changes to ImageConfusion will be documented in this file.
 
+## [v2.2.0] - 2026-07-11
+
+### Added
+
+- **统一确认对话框**：新增 `ConfirmDialog.vue` 组件，替换浏览器原生 `confirm()`，风格与 neo-brutalist 设计一致
+- **路由切换动画**：为 `App.vue` 的 `<RouterView>` 添加利落上滑进入动画
+
+### Changed
+
+- `GalleryPage.vue` 删除漫画时改为使用自定义确认对话框
+
 ## [v2.1.0] - 2026-07-11
 
 ### Added

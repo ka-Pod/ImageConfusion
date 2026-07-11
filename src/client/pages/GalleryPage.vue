@@ -5,6 +5,7 @@ import type { ComicMeta } from '../types'
 import ComicCard from '../components/gallery/ComicCard.vue'
 import NewComicModal from '../components/gallery/NewComicModal.vue'
 import ContextMenu, { type MenuItem } from '../components/common/ContextMenu.vue'
+import ConfirmDialog from '../components/common/ConfirmDialog.vue'
 import { useToast } from '../composables/useToast'
 
 const router = useRouter()
@@ -37,6 +38,34 @@ const contextMenu = ref({
   comic: null as ComicMeta | null,
 })
 
+const confirmDialog = ref({
+  visible: false,
+  comic: null as ComicMeta | null,
+})
+
+function openDeleteConfirm(comic: ComicMeta) {
+  confirmDialog.value = { visible: true, comic }
+}
+
+function closeDeleteConfirm() {
+  confirmDialog.value.visible = false
+}
+
+async function onDeleteConfirm() {
+  const comic = confirmDialog.value.comic
+  closeDeleteConfirm()
+  if (!comic) return
+
+  try {
+    const res = await fetch(`/api/gallery/${comic.id}`, { method: 'DELETE' })
+    if (!res.ok) throw new Error('删除失败')
+    showToast('漫画已删除', 'success')
+    await loadComics()
+  } catch (err) {
+    showToast(err instanceof Error ? err.message : '删除失败', 'error')
+  }
+}
+
 const menuItems: MenuItem[] = [
   { label: '查看详情', action: 'detail' },
   { label: '解密阅读', action: 'read' },
@@ -62,15 +91,7 @@ async function onMenuSelect(action: string) {
   } else if (action === 'read') {
     router.push(`/gallery/${comic.id}/reader?total=${comic.totalPages}`)
   } else if (action === 'delete') {
-    if (!confirm(`确定要删除《${comic.name}》吗？此操作不可恢复。`)) return
-    try {
-      const res = await fetch(`/api/gallery/${comic.id}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error('删除失败')
-      showToast('漫画已删除', 'success')
-      await loadComics()
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : '删除失败', 'error')
-    }
+    openDeleteConfirm(comic)
   }
 }
 
@@ -115,6 +136,17 @@ onMounted(() => {
       :items="menuItems"
       @select="onMenuSelect"
       @close="contextMenu.visible = false"
+    />
+
+    <ConfirmDialog
+      :visible="confirmDialog.visible"
+      title="删除漫画"
+      :message="`确定要删除《${confirmDialog.comic?.name || ''}》吗？此操作不可恢复。`"
+      confirm-text="删除"
+      cancel-text="取消"
+      danger
+      @confirm="onDeleteConfirm"
+      @cancel="closeDeleteConfirm"
     />
 
     <NewComicModal

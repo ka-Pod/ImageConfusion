@@ -7,6 +7,7 @@
 - 开发模式：Vite Dev Server (端口 5173) + Hono API 代理
 - 生产模式：Vite 构建输出到 `public/`，由 Hono 静态文件服务提供
 - 全局状态由 `ref()` / `reactive()` 管理，无状态管理库
+- 路由切换使用 `<Transition name="route-slide" mode="out-in">` 实现利落上滑动画
 
 ## 页面结构
 
@@ -688,6 +689,41 @@ IMAGE CONFUSION · ENCRYPT / DECRYPT · SERVER SIDE
 
 ## 画廊页面
 
+### ConfirmDialog
+
+统一确认对话框组件，替代浏览器原生 `confirm()`，风格与现有 neo-brutalist 按钮、Modal 一致。
+
+```
+┌─────────────────────────────┐
+│ 删除漫画                     │
+│ 确定要删除《xxx》吗？        │
+│ 此操作不可恢复。             │
+│                  [取消][删除]│
+└─────────────────────────────┘
+```
+
+**特性：**
+
+- 白底、黑边框、硬朗阴影，与按钮风格统一
+- 支持 `title`、`message`、`confirmText`、`cancelText`、`danger` 等 props
+- 支持 Backdrop 点击、按 `Esc` 关闭
+- 出现/消失动画：backdrop 淡入 + 对话框上滑微弹入
+
+**用法：**
+
+```vue
+<ConfirmDialog
+  :visible="dialogVisible"
+  title="删除漫画"
+  message="确定要删除吗？"
+  confirm-text="删除"
+  cancel-text="取消"
+  danger
+  @confirm="handleConfirm"
+  @cancel="handleCancel"
+/>
+```
+
 ### ContextMenu
 
 通用右键菜单组件，用于在漫画卡片上弹出操作菜单。
@@ -752,7 +788,7 @@ IMAGE CONFUSION · ENCRYPT / DECRYPT · SERVER SIDE
 - **右键菜单**：在漫画卡片上右键可调出 `ContextMenu`，支持：
   - **查看详情**：跳转到 `ComicDetailPage`
   - **解密阅读**：直接跳转到 `ReaderPage`
-  - **删除漫画**：弹出浏览器 `confirm` 确认框，确认后调用 `DELETE /api/gallery/:id`，删除成功后刷新列表
+  - **删除漫画**：打开 `ConfirmDialog` 确认，确认后调用 `DELETE /api/gallery/:id`，删除成功后刷新列表
 
 ### ComicDetailPage
 
@@ -760,7 +796,7 @@ IMAGE CONFUSION · ENCRYPT / DECRYPT · SERVER SIDE
 
 - 显示真实解密后的封面缩略图（来自 `coverBase64`）
 - 点击"解密阅读"跳转到 `ReaderPage`
-- 点击"删除漫画"弹出浏览器 `confirm` 确认框
+- 点击"删除漫画"打开 `ConfirmDialog` 确认
 - 确认后调用 `DELETE /api/gallery/:id`
 - 删除成功后返回 `GalleryPage`
 

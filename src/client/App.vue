@@ -16,7 +16,11 @@ const route = useRoute()
       </RouterLink>
     </nav>
     <main>
-      <RouterView />
+      <RouterView v-slot="{ Component }">
+        <Transition name="route-slide" mode="out-in">
+          <component :is="Component" />
+        </Transition>
+      </RouterView>
     </main>
     <ToastContainer />
   </div>
