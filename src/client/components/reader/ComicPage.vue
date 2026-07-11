@@ -1,19 +1,14 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-
 const props = defineProps<{
   src: string
   index: number
   total: number
 }>()
-
-const imgRef = ref<HTMLImageElement>()
 </script>
 
 <template>
   <div class="reader-item">
     <img
-      :ref="imgRef"
       :src="src"
       :alt="`第 ${index + 1} 页`"
     />

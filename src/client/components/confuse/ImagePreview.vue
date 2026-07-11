@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import { watch, ref } from 'vue'
-import type { BatchItem } from '../../types'
 
 const props = defineProps<{
   src: string
   processing: boolean
 }>()
 
-const imgRef = ref<HTMLImageElement>()
 const currentSrc = ref(props.src)
 
 watch(() => props.src, (newVal) => {
@@ -23,7 +21,6 @@ watch(() => props.src, (newVal) => {
     <div v-if="processing" class="shimmer-placeholder"></div>
     <img
       v-else-if="src"
-      :ref="imgRef"
       :src="src"
       alt="preview"
     />

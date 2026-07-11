@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import AppHeader from '../components/common/AppHeader.vue'
 import ControlBar from '../components/confuse/ControlBar.vue'
 import ImagePreview from '../components/confuse/ImagePreview.vue'
@@ -14,7 +14,7 @@ import { useToast } from '../composables/useToast'
 const {
   batchMode, batchItems, selectedIndex, sessionId, zipId,
   originalSrc, originalFile, originalFileName, currentAction,
-  hasItems, allEncrypted, allDecrypted,
+  hasItems, allEncrypted,
   loadSingleFile, loadBatchFiles, processSingle, processBatch, scrollToImage,
 } = useConfuse()
 
