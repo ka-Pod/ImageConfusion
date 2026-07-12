@@ -3,5 +3,6 @@ logs/
 *.log
 tmp/
 storage/
+storage-repro-*/
 public/
 vercel.json
