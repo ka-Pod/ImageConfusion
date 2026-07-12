@@ -82,6 +82,36 @@ describe('gallery storage', () => {
     expect(cover[1]).toBe(0xD8)
   })
 
+  test('saveComic and getOrCreatePage support JPG page files', async () => {
+    const { createZipFile, processImageBuffer } = await import('../batch')
+
+    const pixels = new Uint8Array(4 * 16 * 16)
+    for (let i = 0; i < 16 * 16; i++) {
+      const idx = i * 4
+      pixels[idx] = (i * 37) % 256
+      pixels[idx + 1] = (i * 71) % 256
+      pixels[idx + 2] = (i * 13) % 256
+      pixels[idx + 3] = 255
+    }
+    const raw = await sharp(Buffer.from(pixels), { raw: { width: 16, height: 16, channels: 4 } }).png().toBuffer()
+    const encryptedJpg = await processImageBuffer(raw, 'encrypt', 'jpeg')
+
+    const meta = { name: 'jpg-page-test', author: '', source: '', createdAt: new Date().toISOString(), coverIndex: 0 }
+    const zipBuffer = await createZipFile([
+      { name: 'metadata.json', buffer: Buffer.from(JSON.stringify(meta)) },
+      { name: 'page_001.jpg', buffer: encryptedJpg },
+    ])
+
+    const id = await storage.saveComic(zipBuffer, meta)
+    const coverPath = join(TEST_STORAGE, id, 'cover.jpg')
+    expect(existsSync(coverPath)).toBe(true)
+
+    const page = await storage.getOrCreatePage(id, 0)
+    expect(page).not.toBeNull()
+    expect(page![0]).toBe(0xFF)
+    expect(page![1]).toBe(0xD8)
+  })
+
   test('deleteComic removes comic directory', async () => {
     const zipBuffer = await createEncryptedTestZip(1)
     const meta = { name: '待删除', author: '', source: '', createdAt: new Date().toISOString(), coverIndex: 0 }

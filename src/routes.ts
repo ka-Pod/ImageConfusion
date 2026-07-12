@@ -17,6 +17,11 @@ function sanitizeFilename(name: string): string {
   return name.replace(/[^\w\u4e00-\u9fa5.\-]/g, '_')
 }
 
+function isBadImageInputError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err)
+  return /unsupported image format|input buffer contains|input file is truncated|corrupt image/i.test(msg)
+}
+
 async function processImageAction(
   c: Context,
   action: 'encrypt' | 'decrypt',
@@ -62,7 +67,7 @@ async function processImageAction(
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     await log('ERROR', `${action} failed: ${msg}`)
-    return c.json({ error: msg }, 500)
+    return c.json({ error: msg }, isBadImageInputError(err) ? 400 : 500)
   }
 }
 

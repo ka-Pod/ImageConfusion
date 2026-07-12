@@ -209,6 +209,7 @@ export async function startCleanupTimer(intervalMs: number = 5 * 60 * 1000): Pro
       }
     } catch { /* ignore */ }
   }, intervalMs)
+  cleanupTimer.unref?.()
 }
 
 export function stopCleanupTimer(): void {

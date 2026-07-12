@@ -73,6 +73,15 @@ describe('API E2E', () => {
     expect(json.error).toBeDefined()
   })
 
+  test('POST /api/encrypt with invalid image returns 400', async () => {
+    const form = new FormData()
+    form.append('image', new Blob([Buffer.from('not-an-image')], { type: 'text/plain' }), 'bad.txt')
+    const res = await app.request('/api/encrypt', { method: 'POST', body: form })
+    expect(res.status).toBe(400)
+    const json = await res.json()
+    expect(json.error).toBeDefined()
+  })
+
   test('GET /unknown returns 404', async () => {
     const res = await app.request('/api/unknown')
     expect(res.status).toBe(404)
