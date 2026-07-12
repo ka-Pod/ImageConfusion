@@ -136,3 +136,106 @@ bun test
 - **FAIL**——发现问题，报告详情，最多重试 3 次
 - **PARTIAL**——部分通过，其他无法验证
 
+## 9. AI 安全与 Bug 审查强制规则
+
+本节是给 Codex、Claude、Trae、Cursor 等 AI 代理使用的强制规则。执行代码修改、审查、提交、推送前必须逐条检查；没有命令证据不得声称安全。
+
+### 9.1 绝对禁止提交的内容
+
+以下路径和文件属于本地运行数据、隐私数据、临时产物或构建产物，禁止进入 Git 索引、提交和 GitHub：
+
+- `storage/`
+- `storage-repro-*/`
+- `tmp/`
+- `logs/`
+- `node_modules/`
+- `dist/`
+- `coverage/`
+- `.env`, `.env.*`
+- `*.log`
+- `*.zip`
+- `*.sqlite`, `*.db`
+- 含用户上传图片、漫画 ZIP、解密结果、封面缓存、会话缓存的任何目录
+
+如果确实需要提交示例数据，必须满足全部条件：
+
+- 使用 `fixtures/` 或 `src/**/__fixtures__/` 下的最小化合成样本
+- 文件不来自用户真实数据
+- 文件大小合理，且用途写在测试或文档中
+- 提交前明确说明“这是合成测试数据，不含用户内容”
+
+### 9.2 Git 安全门禁
+
+任何 AI 在提交、推送、创建 PR、声称“没有泄露”前，必须执行并汇报以下命令的关键结果：
+
+```bash
+git status --short
+git diff --name-only
+git diff --cached --name-only
+git ls-files storage storage-repro-* tmp logs node_modules dist coverage
+git ls-files | grep -E '(^|/)(storage|tmp|logs|node_modules|dist|coverage)(/|$)|\.env|\.zip$|\.sqlite$|\.db$|\.log$'
+```
+
+Windows PowerShell 环境下可以使用等价命令：
+
+```powershell
+git status --short
+git diff --name-only
+git diff --cached --name-only
+git ls-files storage storage-repro-* tmp logs node_modules dist coverage
+git ls-files | Select-String -Pattern '(^|/)(storage|tmp|logs|node_modules|dist|coverage)(/|$)|\.env|\.zip$|\.sqlite$|\.db$|\.log$'
+```
+
+判定规则：
+
+- `git ls-files storage storage-repro-* tmp logs ...` 必须无输出
+- 敏感文件扫描必须无输出，或仅输出经人工确认的合成 fixture
+- `git status --short` 中不得出现未解释的删除、二进制文件、ZIP、数据库、日志、缓存目录
+- 发现误提交后，禁止继续开发功能；必须先处理泄露风险
+
+### 9.3 发现泄露时的应急流程
+
+一旦发现 `storage/`、`storage-repro-*`、用户上传文件、ZIP、日志、数据库或密钥进入 Git 历史，立即执行以下流程：
+
+1. 停止功能开发，记录泄露路径和最近相关提交。
+2. 将泄露路径加入 `.gitignore`，例如 `storage-repro-*/`。
+3. 从当前索引和工作区移除泄露文件，不得保留在可提交状态。
+4. 用 `git filter-repo` 优先清理历史；若不可用，才使用 `git filter-branch`。
+5. 清理后执行 `git log --all --stat -- <泄露路径>` 和 `git ls-files <泄露路径>` 验证无输出。
+6. 如已推送到远端，必须使用 `git push --force-with-lease` 覆盖远端历史。
+7. 如果文件包含真实用户数据或密钥，按泄露处理：通知用户、轮换密钥、重新生成数据。
+
+禁止只删除当前工作区文件后声称已解决；进入 Git 历史的文件必须清理历史。
+
+### 9.4 Bug 检查流程
+
+审查或修改代码时必须按以下顺序检查：
+
+1. **输入边界**：空文件、坏图片、空 ZIP、损坏 ZIP、非图片文件、大文件、中文文件名、子目录文件名。
+2. **像素正确性**：encrypt/decrypt 是否使用同一 `width`、`height`、`channels`、offset 和 Gilbert 曲线。
+3. **格式一致性**：上传、批量、画廊、阅读器支持的扩展名必须一致；不能统计支持 jpg，但读取只找 png。
+4. **并发与竞态**：禁止依赖 `existsSync` 后再假设文件仍存在；读写文件必须 `try/catch` 兜底。
+5. **HTTP 语义**：用户输入错误返回 400；缺资源返回 404；真实服务端异常才返回 500。
+6. **资源清理**：临时 session、预览缓存、批量 ZIP、定时器必须可清理；后台 timer 不得阻止测试进程退出。
+7. **安全输出**：错误信息不得暴露本机绝对路径、密钥、用户隐私文件名或完整堆栈。
+8. **前端状态**：上传、保存、删除、阅读页必须处理 loading、失败、空列表、重复点击和路由参数错误。
+
+### 9.5 修复完成验收
+
+修复 bug 或安全问题后必须执行：
+
+```bash
+bun test
+pnpm lint
+git status --short
+```
+
+如果 `pnpm lint` 因环境问题无法执行，必须说明失败原因和已执行的替代检查。安全相关修复必须额外执行 9.2 的 Git 安全门禁命令。
+
+最终报告必须包含：
+
+- 修改了哪些文件
+- 发现并修复了什么风险
+- 执行了哪些验证命令
+- 是否仍有无法验证的残余风险
+
